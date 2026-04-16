@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(mv \"C:\\\\Users\\\\jekoe\\\\OneDrive\\\\Desktop\\\\ei\\\\client\\\\src\\\\App.css\" \"C:\\\\Users\\\\jekoe\\\\OneDrive\\\\Desktop\\\\ei\\\\client\\\\src\\\\App.scss\")",
+      "Bash(mv \"C:\\\\Users\\\\jekoe\\\\OneDrive\\\\Desktop\\\\ei\\\\client\\\\src\\\\index.css\" \"C:\\\\Users\\\\jekoe\\\\OneDrive\\\\Desktop\\\\ei\\\\client\\\\src\\\\index.scss\")",
+      "WebFetch(domain:cdn.dribbble.com)",
+      "Bash(grep -n 'darken\\\\|background: $color-light' 'C:\\\\Users\\\\jekoe\\\\OneDrive\\\\Desktop\\\\ei\\\\client\\\\src\\\\styles\\\\index.scss')",
+      "Bash(grep -n 'rgba\\($color-primary\\\\|rgba\\($color-teal\\\\|rgba\\($color-dark-teal\\\\|rgba\\($color-navy\\\\|rgba\\($color-yellow\\\\|rgba\\($color-orange' 'C:\\\\Users\\\\jekoe\\\\OneDrive\\\\Desktop\\\\ei\\\\client\\\\src\\\\styles\\\\index.scss')",
+      "Bash(npx vite:*)"
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+// Typography
+$font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+$font-mono: ui-monospace, Consolas, monospace;
+$font-georgian: 'ALK Rounded Mtav Med', sans-serif;
+
+$breakpoint-mobile: 768px;
+
+@mixin respond-mobile {
+  @media (max-width: $breakpoint-mobile) {
+    @content;
+  }
+}
+
+$color-light:     #fcfff6;   // soft green-white — page/card background
+$color-teal:      #215E61;   // dark teal — accents, badges, icons
+$color-dark:      #233D4D;   // deep navy — sidebar, headings
+$color-orange:    #FE7F2D;   // vivid orange — buttons, hover, highlights
+$color-green:     #2E9E44;   // success green — passed badges, scores
+
+// legacy aliases so existing references still compile
+$color-primary:   $color-teal;
+$color-dark-teal: $color-dark;
+$color-navy:      $color-dark;
+$color-red:       $color-orange;
+$color-accent:    $color-orange;
+$color-danger:    $color-orange;
+$color-yellow:    $color-teal;
+$color-soft:      $color-light;
+
+
+
+
+ 

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet:*)",
+      "Bash(npm install:*)",
+      "Bash(taskkill /IM EI.Api.exe /F)",
+      "Bash(cmd:*)",
+      "Bash(taskkill /PID 13868 /F)"
+    ]
+  }
+}

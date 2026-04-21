@@ -1,7 +1,9 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useCreateTest } from '../../hooks/tests/useCreateTest'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useUpdateTest } from '../../hooks/tests/useUpdateTest'
 import { useSubjects } from '../../hooks/tests/useSubjects'
+import { useTest } from '../../hooks/tests/useTest'
+import { useTestQuestions } from '../../hooks/tests/useTestQuestions'
 
 const ETAPI_OPTIONS = ['I ეტაპი', 'II ეტაპი', 'III ეტაპი', 'IV ეტაპი']
 const OPTION_LABELS = ['A', 'B', 'C', 'D']
@@ -12,10 +14,21 @@ const emptyQuestion = () => ({
   correct_index: 0,
 })
 
-function CreateTest() {
+function toLocalDateTimeInput(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function EditTest() {
+  const { id } = useParams()
   const navigate = useNavigate()
-  const { createTest, loading, error } = useCreateTest()
+  const { updateTest, loading: saving, error } = useUpdateTest()
   const { subjects, loading: subjectsLoading } = useSubjects()
+  const { test, loading: testLoading } = useTest(id)
+  const { questions: loadedQuestions, loading: questionsLoading } = useTestQuestions(id)
 
   const [fields, setFields] = useState({
     subjectId:     '',
@@ -26,6 +39,30 @@ function CreateTest() {
   })
 
   const [questions, setQuestions] = useState([emptyQuestion()])
+
+  useEffect(() => {
+    if (!test) return
+    setFields({
+      subjectId:     String(test.subject_id ?? test.subject?.id ?? ''),
+      etapi:         test.etapi ?? '',
+      testStartDate: toLocalDateTimeInput(test.test_start_date),
+      maxScore:      String(test.max_score ?? ''),
+      passScore:     String(test.pass_score ?? ''),
+    })
+  }, [test])
+
+  useEffect(() => {
+    if (!loadedQuestions || loadedQuestions.length === 0) return
+    setQuestions(
+      loadedQuestions.map(q => ({
+        question_text: q.question_text ?? '',
+        options:       Array.isArray(q.options) && q.options.length === 4
+                         ? q.options
+                         : ['', '', '', ''],
+        correct_index: q.correct_index ?? 0,
+      }))
+    )
+  }, [loadedQuestions])
 
   const set = key => e => setFields(prev => ({ ...prev, [key]: e.target.value }))
 
@@ -55,15 +92,44 @@ function CreateTest() {
       pass_score:      Number(fields.passScore),
       questions:       questions,
     }
-    const data = await createTest(payload)
-    if (data) navigate('/home')
+    const ok = await updateTest(id, payload)
+    if (ok) navigate('/home')
+  }
+
+  const initialLoading = testLoading || questionsLoading
+
+  if (initialLoading) {
+    return (
+      <div className="create-test-wrapper">
+        <div className="create-test-container">
+          <p className="section-empty">იტვირთება...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!test) {
+    return (
+      <div className="create-test-wrapper">
+        <div className="create-test-container">
+          <div className="create-test-header">
+            <button className="ongoing-back-btn" onClick={() => navigate('/home')}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              უკან
+            </button>
+            <h1 className="create-test-title">ტესტი ვერ მოიძებნა</h1>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="create-test-wrapper">
       <div className="create-test-container">
 
-        {/* Header */}
         <div className="create-test-header">
           <button className="ongoing-back-btn" onClick={() => navigate('/home')}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -71,10 +137,9 @@ function CreateTest() {
             </svg>
             უკან
           </button>
-          <h1 className="create-test-title">ახალი ტესტი</h1>
+          <h1 className="create-test-title">ტესტის რედაქტირება</h1>
         </div>
 
-        {/* Form */}
         <form className="create-test-form" onSubmit={handleSubmit}>
 
           <div className="ct-field">
@@ -148,7 +213,6 @@ function CreateTest() {
             </div>
           </div>
 
-          {/* Questions */}
           <div className="ct-questions-section">
             <div className="ct-questions-header">
               <span className="ct-label">კითხვები ({questions.length})</span>
@@ -223,8 +287,8 @@ function CreateTest() {
 
           {error && <p className="ct-error">{error}</p>}
 
-          <button type="submit" className="ct-submit-btn" disabled={loading}>
-            {loading ? 'იქმნება...' : 'ტესტის შექმნა'}
+          <button type="submit" className="ct-submit-btn" disabled={saving}>
+            {saving ? 'ინახება...' : 'შენახვა'}
           </button>
 
         </form>
@@ -233,4 +297,4 @@ function CreateTest() {
   )
 }
 
-export default CreateTest
+export default EditTest

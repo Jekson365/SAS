@@ -530,6 +530,13 @@
           }
         }
 
+        .test-card-relative {
+          font-size: 11px;
+          font-weight: 600;
+          color: $color-orange;
+          margin-top: -4px;
+        }
+
         .test-card-scores {
           display: flex;
           flex-direction: column;
@@ -619,6 +626,44 @@
 
           &:hover {
             background: $color-teal;
+          }
+        }
+
+        .test-card-actions {
+          display: flex;
+          gap: 8px;
+          align-self: stretch;
+          margin-top: auto;
+
+          .register-btn {
+            flex: 1 1 0;
+            width: 50%;
+            margin-top: 0;
+          }
+        }
+
+        .start-test-btn {
+          background: $color-orange;
+
+          &:hover {
+            background: darken($color-orange, 8%);
+          }
+        }
+
+        .stop-test-btn {
+          background: #c0392b;
+
+          &:hover {
+            background: darken(#c0392b, 8%);
+          }
+        }
+
+        .register-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+
+          &:hover {
+            background: $color-dark-teal;
           }
         }
 

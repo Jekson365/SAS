@@ -5,6 +5,7 @@ import VerifyEmail from './screens/auth/VerifyEmail'
 import Home from './screens/home/Home'
 import OngoingTest from './screens/ongoingTest/OngoingTest'
 import CreateTest from './screens/createTest/CreateTest'
+import EditTest from './screens/editTest/EditTest'
 import './styles/App.scss'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/test/:id" element={<OngoingTest />} />
         <Route path="/create-test" element={<CreateTest />} />
+        <Route path="/edit-test/:id" element={<EditTest />} />
       </Routes>
     </BrowserRouter>
   )

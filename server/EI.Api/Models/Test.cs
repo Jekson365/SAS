@@ -16,8 +16,8 @@ public class Test
     [JsonPropertyName("etapi")]
     public string Etapi { get; set; } = string.Empty;
 
-    [JsonPropertyName("test_taken_date")]
-    public DateOnly TestTakenDate { get; set; }
+    [JsonPropertyName("test_start_date")]
+    public DateTime TestStartDate { get; set; }
 
     [JsonPropertyName("max_score")]
     public int MaxScore { get; set; }
@@ -30,4 +30,6 @@ public class Test
 
     [JsonPropertyName("succeed")]
     public bool? Succeed { get; set; }
+    [JsonPropertyName("on_going")]
+    public bool OnGoing {get;set;}
 }

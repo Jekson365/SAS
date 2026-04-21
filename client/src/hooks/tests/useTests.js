@@ -1,16 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import axiosInstance from '../../api/axiosInstance'
 
 export function useTests() {
   const [tests,   setTests]   = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    axiosInstance.get('/tests')
+  const fetchTests = useCallback(() => {
+    setLoading(true)
+    return axiosInstance.get('/tests')
       .then(res => setTests(res.data))
       .catch(() => setTests([]))
       .finally(() => setLoading(false))
   }, [])
 
-  return { tests, loading }
+  useEffect(() => {
+    fetchTests()
+  }, [fetchTests])
+
+  return { tests, loading, refetch: fetchTests }
 }

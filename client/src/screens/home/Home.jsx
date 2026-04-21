@@ -4,6 +4,7 @@ import practiceTests from '../../data/practiceTests.json'
 import { useCurrentUser } from '../../hooks/users/useCurrentUser'
 import { useLogout } from '../../hooks/users/useLogout'
 import { useTests } from '../../hooks/tests/useTests'
+import { useStartTest } from '../../hooks/tests/useStartTest'
 import { useUserTestResults } from '../../hooks/tests/useUserTestResults'
 
 const NEWS_SLIDES = [
@@ -13,6 +14,38 @@ const NEWS_SLIDES = [
 ]
 
 const SIDE_BOXES = Array.from({ length: 6 }, (_, i) => i + 1)
+
+const GE_MONTHS = [
+  'იანვარი', 'თებერვალი', 'მარტი', 'აპრილი', 'მაისი', 'ივნისი',
+  'ივლისი', 'აგვისტო', 'სექტემბერი', 'ოქტომბერი', 'ნოემბერი', 'დეკემბერი',
+]
+
+function formatTestDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getDate()} ${GE_MONTHS[d.getMonth()]} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function formatRelativeTime(iso) {
+  if (!iso) return ''
+  const target = new Date(iso).getTime()
+  if (isNaN(target)) return ''
+  const diffMs = target - Date.now()
+  const past = diffMs < 0
+  const absSec = Math.floor(Math.abs(diffMs) / 1000)
+  const days = Math.floor(absSec / 86400)
+  const hours = Math.floor((absSec % 86400) / 3600)
+  const minutes = Math.floor((absSec % 3600) / 60)
+
+  let parts
+  if (days > 0)       parts = `${days} დღე ${hours} სთ`
+  else if (hours > 0) parts = `${hours} სთ ${minutes} წთ`
+  else                parts = `${Math.max(minutes, 1)} წთ`
+
+  return past ? `${parts} წინ` : `${parts}-ში`
+}
 
 function TrophyIcon() {
   return (
@@ -72,7 +105,8 @@ function PracticeCard({ test }) {
   )
 }
 
-function TestCard({ test, upcoming }) {
+function TestCard({ test, upcoming, isAdmin, onStart }) {
+  const navigate = useNavigate()
   const subjectName = test.subject?.name ?? test.subject ?? '—'
   return (
     <div className={`box test-card ${upcoming ? 'upcoming' : test.succeed ? 'success' : 'failed'}`}>
@@ -83,8 +117,12 @@ function TestCard({ test, upcoming }) {
 
       <div className="test-card-meta">
         <span className="test-etapi">{test.etapi}</span>
-        <span className="test-card-date">{upcoming ? '📅' : '✅'} {test.test_taken_date}</span>
+        <span className="test-card-date">{upcoming ? '📅' : '✅'} {formatTestDate(test.test_start_date)}</span>
       </div>
+
+      {upcoming && (
+        <div className="test-card-relative">⏳ {formatRelativeTime(test.test_start_date)}</div>
+      )}
 
       <div className="test-card-scores">
         <div className="score-row">
@@ -109,13 +147,29 @@ function TestCard({ test, upcoming }) {
         </div>
       )}
       {upcoming && (
-        <button className="register-btn">რეგისტრაცია</button>
+        isAdmin
+          ? (
+            <div className="test-card-actions">
+              <button
+                className="register-btn"
+                disabled={test.on_going}
+                title={test.on_going ? 'ვერ რედაქტირდება მიმდინარე ტესტი' : undefined}
+                onClick={() => !test.on_going && navigate(`/edit-test/${test.id}`)}
+              >
+                რედაქტირება
+              </button>
+              {!test.on_going && (
+                <button className="register-btn start-test-btn" onClick={() => onStart?.(test.id)}>ტესტის დაწყება</button>
+              )}
+            </div>
+          )
+          : <button className="register-btn">რეგისტრაცია</button>
       )}
     </div>
   )
 }
 
-function OngoingCard({ test, taken }) {
+function OngoingCard({ test, taken, isAdmin, onStop }) {
   const navigate = useNavigate()
   const subjectName = test.subject?.name ?? test.subject ?? '—'
   return (
@@ -133,8 +187,10 @@ function OngoingCard({ test, taken }) {
 
       <div className="test-card-meta">
         <span className="test-etapi">{test.etapi}</span>
-        <span className="test-card-date">🕐 {test.test_taken_date}</span>
+        <span className="test-card-date">🕐 {formatTestDate(test.test_start_date)}</span>
       </div>
+
+      <div className="test-card-relative">⏱ დაწყებულია {formatRelativeTime(test.test_start_date)}</div>
 
       <div className="test-card-scores">
         <div className="score-row">
@@ -147,7 +203,12 @@ function OngoingCard({ test, taken }) {
         </div>
       </div>
 
-      {taken
+      {isAdmin ? (
+        <div className="test-card-actions">
+          <button className="register-btn" disabled title="ვერ რედაქტირდება მიმდინარე ტესტი">რედაქტირება</button>
+          <button className="register-btn stop-test-btn" onClick={() => onStop?.(test.id)}>ტესტის შეწყვეტა</button>
+        </div>
+      ) : taken
         ? <div className="ongoing-taken-label">ტესტი უკვე ჩაბარებულია</div>
         : <button className="register-btn ongoing-enter-btn" onClick={() => navigate(`/test/${test.id}`)}>ტესტში შესვლა</button>
       }
@@ -164,8 +225,19 @@ function Home() {
   const { user } = useCurrentUser()
   const isAdmin = user?.role === 1 || user?.role === 'Admin'
   const { logout, loading: loggingOut } = useLogout()
-  const { tests, loading: testsLoading } = useTests()
+  const { tests, loading: testsLoading, refetch: refetchTests } = useTests()
+  const { startTest, stopTest } = useStartTest()
   const { results: userResults } = useUserTestResults()
+
+  const handleStartTest = async (id) => {
+    const ok = await startTest(id)
+    if (ok) await refetchTests()
+  }
+
+  const handleStopTest = async (id) => {
+    const ok = await stopTest(id)
+    if (ok) await refetchTests()
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -174,15 +246,25 @@ function Home() {
 
   const takenTestIds = new Set(userResults.map(r => r.test_id))
 
-  const today = new Date().toISOString().split('T')[0]
-  const ongoingTests = tests.filter(t => t.test_taken_date === today)
-  const futureTests  = tests.filter(t => t.test_taken_date > today)
+  const now = Date.now()
+  const ongoingTests = tests.filter(t => t.on_going === true)
+  
+  console.log(tests)
+
+  const futureTests = tests.filter(t => {
+    if (t.on_going === false) return true
+    const start = new Date(t.test_start_date).getTime()
+    return !isNaN(start)
+  })
+
+  console.log(ongoingTests)
+  console.log(futureTests)
 
   const completedTests = userResults.map(r => ({
     id:             r.test_id,
     subject:        r.test?.subject ?? '—',
     etapi:          r.test?.etapi ?? '',
-    test_taken_date: r.test?.test_taken_date ?? '',
+    test_start_date: r.test?.test_start_date ?? '',
     max_score:      r.test?.max_score ?? 0,
     pass_score:     r.test?.pass_score ?? 0,
     final_score:    r.score,
@@ -242,15 +324,6 @@ function Home() {
               ტესტის შექმნა
             </button>
           )}
-          <button className="nav-item" onClick={() => navigate('/print-barcodes')}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="5" width="4" height="14" rx="1"/>
-              <rect x="8" y="5" width="2" height="14" rx="1"/>
-              <rect x="12" y="5" width="4" height="14" rx="1"/>
-              <rect x="18" y="5" width="3" height="14" rx="1"/>
-            </svg>
-            შტრიხკოდები
-          </button>
         </nav>
 
         <button className="nav-item logout" onClick={handleLogout} disabled={loggingOut}>
@@ -318,7 +391,7 @@ function Home() {
               ? <p className="section-empty">იტვირთება...</p>
               : <div className="boxes-grid">
                   {ongoingTests.map(test => (
-                    <OngoingCard key={test.id} test={test} taken={takenTestIds.has(test.id)} />
+                    <OngoingCard key={test.id} test={test} taken={takenTestIds.has(test.id)} isAdmin={isAdmin} onStop={handleStopTest} />
                   ))}
                 </div>
             }
@@ -330,7 +403,7 @@ function Home() {
           <h3 className="section-title">სამომავლო ტესტები</h3>
           <div className="boxes-grid">
             {futureTests.map(test => (
-              <TestCard key={test.id} test={test} upcoming />
+              <TestCard key={test.id} test={test} upcoming isAdmin={isAdmin} onStart={handleStartTest} />
             ))}
           </div>
         </section>

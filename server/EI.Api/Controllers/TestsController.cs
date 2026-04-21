@@ -31,7 +31,7 @@ public class TestsController(ITestRepository repo, IQuestionRepository questionR
         {
             SubjectId    = request.SubjectId,
             Etapi        = request.Etapi,
-            TestTakenDate = request.TestTakenDate,
+            TestStartDate = DateTime.SpecifyKind(request.TestStartDate, DateTimeKind.Utc),
             MaxScore     = request.MaxScore,
             PassScore    = request.PassScore,
         };
@@ -57,10 +57,63 @@ public class TestsController(ITestRepository repo, IQuestionRepository questionR
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, Test updated)
+    public async Task<IActionResult> Update(int id, CreateTestRequest request)
     {
-        if (id != updated.Id) return BadRequest();
-        repo.Update(updated);
+        var test = await repo.GetByIdAsync(id);
+        if (test is null) return NotFound();
+
+        if (test.OnGoing)
+            return Conflict(new { message = "Cannot edit a test that is currently ongoing. Stop it first." });
+
+        test.SubjectId     = request.SubjectId;
+        test.Etapi         = request.Etapi;
+        test.TestStartDate = DateTime.SpecifyKind(request.TestStartDate, DateTimeKind.Utc);
+        test.MaxScore      = request.MaxScore;
+        test.PassScore     = request.PassScore;
+
+        repo.Update(test);
+
+        var existing = await questionRepo.GetByTestIdAsync(id);
+        foreach (var q in existing)
+            questionRepo.Remove(q);
+
+        foreach (var q in request.Questions)
+        {
+            await questionRepo.AddAsync(new Question
+            {
+                TestId       = id,
+                QuestionText = q.QuestionText,
+                Options      = q.Options,
+                CorrectIndex = q.CorrectIndex,
+            });
+        }
+
+        await repo.SaveAsync();
+        await questionRepo.SaveAsync();
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/start")]
+    public async Task<IActionResult> Start(int id)
+    {
+        var test = await repo.GetByIdAsync(id);
+        if (test is null) return NotFound();
+
+        test.OnGoing = true;
+        repo.Update(test);
+        await repo.SaveAsync();
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/stop")]
+    public async Task<IActionResult> Stop(int id)
+    {
+        var test = await repo.GetByIdAsync(id);
+        if (test is null) return NotFound();
+
+        test.OnGoing = false;
+        repo.Update(test);
         await repo.SaveAsync();
         return NoContent();
     }

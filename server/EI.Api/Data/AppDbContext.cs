@@ -27,11 +27,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(t => t.Id).HasColumnName("id");
             e.Property(t => t.SubjectId).HasColumnName("subject_id");
             e.Property(t => t.Etapi).HasColumnName("etapi").HasMaxLength(50).IsRequired();
-            e.Property(t => t.TestTakenDate).HasColumnName("test_taken_date");
+            e.Property(t => t.TestStartDate).HasColumnName("test_start_date");
             e.Property(t => t.MaxScore).HasColumnName("max_score");
             e.Property(t => t.PassScore).HasColumnName("pass_score");
             e.Property(t => t.FinalScore).HasColumnName("final_score");
             e.Property(t => t.Succeed).HasColumnName("succeed");
+            e.Property(t => t.OnGoing).HasColumnName("on_going").HasDefaultValue(false).IsRequired();
 
             e.HasOne(t => t.Subject)
              .WithMany()

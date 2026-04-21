@@ -32,6 +32,21 @@ public class UserRepository : IUserRepository
     public async Task SaveAsync() =>
         await _db.SaveChangesAsync();
 
-    public async Task<User?> GetByEmailAsync(string email) =>
-        await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+    public async Task<User?> GetByAuthParamAsync(string authParam)
+    {
+        return await _db.Users.FirstOrDefaultAsync(u => u.PrivateNumber == authParam);
+    }
+
+    public Task<User?> GetByEmailAsync(string email) =>
+        _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+    public Task<bool> ExistsByEmailAsync(string email) =>
+        _db.Users.AnyAsync(u => u.Email == email);
+
+    public Task<bool> ExistsByPrivateNumberAsync(string hashedPrivateNumber) =>
+        _db.Users.AnyAsync(u => u.PrivateNumber == hashedPrivateNumber);
+
+    public Task<bool> ExistsByMobileNumberAsync(string hashedMobileNumber) =>
+        _db.Users.AnyAsync(u => u.MobileNumber == hashedMobileNumber);
 }
+    

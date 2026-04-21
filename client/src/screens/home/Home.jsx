@@ -162,6 +162,7 @@ function Home() {
   const navigate = useNavigate()
 
   const { user } = useCurrentUser()
+  const isAdmin = user?.role === 1 || user?.role === 'Admin'
   const { logout, loading: loggingOut } = useLogout()
   const { tests, loading: testsLoading } = useTests()
   const { results: userResults } = useUserTestResults()
@@ -231,13 +232,24 @@ function Home() {
             </svg>
             მთავარი
           </button>
-          <button className="nav-item" onClick={() => navigate('/create-test')}>
+          {isAdmin && (
+            <button className="nav-item" onClick={() => navigate('/create-test')}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="16"/>
+                <line x1="8" y1="12" x2="16" y2="12"/>
+              </svg>
+              ტესტის შექმნა
+            </button>
+          )}
+          <button className="nav-item" onClick={() => navigate('/print-barcodes')}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="16"/>
-              <line x1="8" y1="12" x2="16" y2="12"/>
+              <rect x="3" y="5" width="4" height="14" rx="1"/>
+              <rect x="8" y="5" width="2" height="14" rx="1"/>
+              <rect x="12" y="5" width="4" height="14" rx="1"/>
+              <rect x="18" y="5" width="3" height="14" rx="1"/>
             </svg>
-            ტესტის შექმნა
+            შტრიხკოდები
           </button>
         </nav>
 

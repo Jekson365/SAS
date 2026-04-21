@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './screens/auth/Login'
 import Register from './screens/auth/Register'
+import VerifyEmail from './screens/auth/VerifyEmail'
 import Home from './screens/home/Home'
 import OngoingTest from './screens/ongoingTest/OngoingTest'
 import CreateTest from './screens/createTest/CreateTest'
@@ -13,6 +14,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/home" element={<Home />} />
         <Route path="/test/:id" element={<OngoingTest />} />
         <Route path="/create-test" element={<CreateTest />} />

@@ -36,8 +36,8 @@ function Login() {
                 <path d="M2 7l10 7 10-7"/>
               </svg>
               <input
-                type="email"
-                placeholder="მეილი"
+                type="text"
+                placeholder="პირადი ნომერი"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required

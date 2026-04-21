@@ -24,4 +24,16 @@ public class User
 
     [JsonPropertyName("password")]
     public string Password { get; set; } = string.Empty;
+
+    [JsonPropertyName("role")]
+    public UserRole Role { get; set; } = UserRole.User;
+
+    [JsonPropertyName("is_verified")]
+    public bool IsVerified { get; set; } = false;
+
+    [JsonPropertyName("verification_code")]
+    public string? VerificationCode { get; set; }
+
+    [JsonPropertyName("verification_expires_at")]
+    public DateTime? VerificationExpiresAt { get; set; }
 }

@@ -3,6 +3,7 @@ using System;
 using EI.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EI.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260421184651_RelaxUserStringColumns")]
+    partial class RelaxUserStringColumns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -242,13 +245,6 @@ namespace EI.Api.Migrations
                         .HasColumnName("email")
                         .HasJsonPropertyName("email");
 
-                    b.Property<bool>("IsVerified")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_verified")
-                        .HasJsonPropertyName("is_verified");
-
                     b.Property<string>("MobileNumber")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -275,13 +271,6 @@ namespace EI.Api.Migrations
                         .HasColumnName("private_number")
                         .HasJsonPropertyName("private_number");
 
-                    b.Property<int>("Role")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("role")
-                        .HasJsonPropertyName("role");
-
                     b.Property<string>("Surname")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -289,23 +278,9 @@ namespace EI.Api.Migrations
                         .HasColumnName("surname")
                         .HasJsonPropertyName("surname");
 
-                    b.Property<string>("VerificationCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("verification_code")
-                        .HasJsonPropertyName("verification_code");
-
-                    b.Property<DateTime?>("VerificationExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("verification_expires_at")
-                        .HasJsonPropertyName("verification_expires_at");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("MobileNumber")
                         .IsUnique();
 
                     b.HasIndex("PrivateNumber")

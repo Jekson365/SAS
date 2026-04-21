@@ -2,6 +2,7 @@ using System.Text;
 using EI.Api.Data;
 using EI.Api.Interfaces;
 using EI.Api.Repositories;
+using EI.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -29,6 +30,10 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
 builder.Services.AddScoped<ITestResultRepository, TestResultRepository>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+
+builder.Services.AddSingleton<IHashingService, HashingService>();
+builder.Services.AddSingleton<IVerificationStore, VerificationStore>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // ── JWT Authentication ────────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;

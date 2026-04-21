@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EI.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260414183215_AddQuestions")]
-    partial class AddQuestions
+    [Migration("20260421192001_add_roles")]
+    partial class add_roles
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -241,15 +241,14 @@ namespace EI.Api.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
+                        .HasColumnType("text")
                         .HasColumnName("email")
                         .HasJsonPropertyName("email");
 
                     b.Property<string>("MobileNumber")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
                         .HasColumnName("mobile_number")
                         .HasJsonPropertyName("mobile_number");
 
@@ -268,10 +267,16 @@ namespace EI.Api.Migrations
 
                     b.Property<string>("PrivateNumber")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
+                        .HasColumnType("text")
                         .HasColumnName("private_number")
                         .HasJsonPropertyName("private_number");
+
+                    b.Property<int>("Role")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("role")
+                        .HasJsonPropertyName("role");
 
                     b.Property<string>("Surname")
                         .IsRequired()
@@ -283,6 +288,9 @@ namespace EI.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("MobileNumber")
                         .IsUnique();
 
                     b.HasIndex("PrivateNumber")

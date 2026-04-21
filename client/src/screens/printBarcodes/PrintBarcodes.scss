@@ -1,0 +1,239 @@
+@use '../../styles/variables' as *;
+
+.pb-wrapper {
+  display: flex;
+  min-height: 100vh;
+  background: $color-light;
+}
+
+// ── Sidebar ──────────────────────────────────────────────
+.pb-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: $color-dark;
+  color: #fff;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.pb-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.65);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  margin-bottom: 4px;
+
+  svg { width: 16px; height: 16px; }
+
+  &:hover { color: #fff; }
+}
+
+.pb-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.pb-section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: rgba(255,255,255,.45);
+  margin-top: 8px;
+}
+
+.pb-select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+
+  option { background: $color-dark; }
+}
+
+.pb-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    color: rgba(255,255,255,.6);
+  }
+
+  input[type='number'] {
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255,255,255,.12);
+    color: #fff;
+    font-size: 13px;
+    width: 100%;
+  }
+}
+
+.pb-checkbox-label {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px !important;
+
+  input[type='checkbox'] { width: 14px; height: 14px; accent-color: $color-orange; }
+}
+
+// ── Rows ──────────────────────────────────────────────────
+.pb-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.pb-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 40px 24px;
+  gap: 4px;
+  align-items: center;
+}
+
+.pb-input-main,
+.pb-input-label {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  font-size: 12px;
+
+  &::placeholder { color: rgba(255,255,255,.35); }
+  &:focus { outline: 1px solid $color-orange; }
+}
+
+.pb-input-qty {
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+
+  &:focus { outline: 1px solid $color-orange; }
+}
+
+.pb-remove {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.4);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+
+  &:hover { color: $color-orange; }
+}
+
+.pb-add {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px dashed rgba(255,255,255,.25);
+  background: transparent;
+  color: rgba(255,255,255,.6);
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover { border-color: $color-orange; color: $color-orange; }
+}
+
+.pb-print {
+  margin-top: auto;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: $color-orange;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover { filter: brightness(1.1); }
+}
+
+// ── Preview ───────────────────────────────────────────────
+.pb-preview {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+}
+
+.pb-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0,0,0,.25);
+  font-size: 16px;
+}
+
+.pb-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.barcode-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.08);
+}
+
+.barcode-label {
+  font-size: 11px;
+  color: $color-dark;
+  margin-bottom: 4px;
+  font-weight: 600;
+  text-align: center;
+}
+
+// ── Print ─────────────────────────────────────────────────
+@media print {
+  .no-print { display: none !important; }
+
+  .pb-wrapper {
+    display: block;
+    background: #fff;
+  }
+
+  .pb-preview {
+    padding: 0;
+  }
+
+  .pb-grid {
+    gap: 8px;
+  }
+
+  .barcode-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    break-inside: avoid;
+  }
+}

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EI.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260414180256_AddSessions")]
-    partial class AddSessions
+    [Migration("20260421182707_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,45 @@ namespace EI.Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("EI.Api.Models.Question", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id")
+                        .HasJsonPropertyName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CorrectIndex")
+                        .HasColumnType("integer")
+                        .HasColumnName("correct_index")
+                        .HasJsonPropertyName("correct_index");
+
+                    b.PrimitiveCollection<string>("Options")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("options")
+                        .HasJsonPropertyName("options");
+
+                    b.Property<string>("QuestionText")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("question_text")
+                        .HasJsonPropertyName("question_text");
+
+                    b.Property<int>("TestId")
+                        .HasColumnType("integer")
+                        .HasColumnName("test_id")
+                        .HasJsonPropertyName("test_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TestId");
+
+                    b.ToTable("questions", (string)null);
+                });
 
             modelBuilder.Entity("EI.Api.Models.Session", b =>
                 {
@@ -142,6 +181,52 @@ namespace EI.Api.Migrations
                     b.HasIndex("SubjectId");
 
                     b.ToTable("tests", (string)null);
+
+                    b.HasAnnotation("Relational:JsonPropertyName", "test");
+                });
+
+            modelBuilder.Entity("EI.Api.Models.TestResult", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id")
+                        .HasJsonPropertyName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Passed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("passed")
+                        .HasJsonPropertyName("passed");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer")
+                        .HasColumnName("score")
+                        .HasJsonPropertyName("score");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at")
+                        .HasJsonPropertyName("submitted_at");
+
+                    b.Property<int>("TestId")
+                        .HasColumnType("integer")
+                        .HasColumnName("test_id")
+                        .HasJsonPropertyName("test_id");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id")
+                        .HasJsonPropertyName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TestId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("test_results", (string)null);
                 });
 
             modelBuilder.Entity("EI.Api.Models.User", b =>
@@ -208,6 +293,17 @@ namespace EI.Api.Migrations
                     b.HasAnnotation("Relational:JsonPropertyName", "user");
                 });
 
+            modelBuilder.Entity("EI.Api.Models.Question", b =>
+                {
+                    b.HasOne("EI.Api.Models.Test", "Test")
+                        .WithMany()
+                        .HasForeignKey("TestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Test");
+                });
+
             modelBuilder.Entity("EI.Api.Models.Session", b =>
                 {
                     b.HasOne("EI.Api.Models.User", "User")
@@ -228,6 +324,25 @@ namespace EI.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Subject");
+                });
+
+            modelBuilder.Entity("EI.Api.Models.TestResult", b =>
+                {
+                    b.HasOne("EI.Api.Models.Test", "Test")
+                        .WithMany()
+                        .HasForeignKey("TestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EI.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Test");
+
+                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }

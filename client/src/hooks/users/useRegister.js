@@ -10,9 +10,6 @@ export function useRegister() {
     setError(null)
     try {
       const { data } = await axiosInstance.post('/users/register', fields)
-      localStorage.setItem('token',   data.token)
-      localStorage.setItem('user_id', data.user_id)
-      localStorage.setItem('email',   data.email)
       return data
     } catch (err) {
       const message = err.response?.data?.message ?? 'რეგისტრაცია ვერ მოხდა.'

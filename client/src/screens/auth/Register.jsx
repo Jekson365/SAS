@@ -29,7 +29,7 @@ function Register() {
     }
     setConfirmError(null)
     const data = await register(fields)
-    if (data) navigate('/home')
+    if (data) navigate('/verify-email', { state: { email: fields.email } })
   }
 
   return (

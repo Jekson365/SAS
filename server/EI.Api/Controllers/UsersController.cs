@@ -16,13 +16,47 @@ public class UsersController : ControllerBase
 {
     private readonly IUserRepository _userRepo;
     private readonly ISessionRepository _sessionRepo;
+    private readonly IHashingService _hasher;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<UsersController> _logger;
     private readonly IConfiguration _config;
 
-    public UsersController(IUserRepository userRepo, ISessionRepository sessionRepo, IConfiguration config)
+    public UsersController(
+        IUserRepository userRepo,
+        ISessionRepository sessionRepo,
+        IHashingService hasher,
+        IEmailService emailService,
+        ILogger<UsersController> logger,
+        IConfiguration config)
     {
-        _userRepo    = userRepo;
-        _sessionRepo = sessionRepo;
-        _config      = config;
+        _userRepo     = userRepo;
+        _sessionRepo  = sessionRepo;
+        _hasher       = hasher;
+        _emailService = emailService;
+        _logger       = logger;
+        _config       = config;
+    }
+
+    // ── POST api/users/test-email ─────────────────────────────────────────────
+    [HttpPost("test-email")]
+    public async Task<IActionResult> TestEmail([FromQuery] string to)
+    {
+        if (string.IsNullOrWhiteSpace(to))
+            return BadRequest(new { message = "Query parameter 'to' is required." });
+
+        try
+        {
+            await _emailService.SendAsync(
+                to,
+                "EI.Api SMTP test",
+                $"This is a test email sent at {DateTime.UtcNow:O}. If you see this, SMTP is configured correctly.");
+            return Ok(new { message = $"Sent test email to {to}" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Test email failed for {To}", to);
+            return StatusCode(500, new { message = "Email send failed.", error = ex.Message });
+        }
     }
 
     // ── POST api/users/register ───────────────────────────────────────────────
@@ -30,20 +64,77 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> Register(RegisterRequest request)
     {
         var existing = await _userRepo.GetByEmailAsync(request.Email);
-        if (existing is not null)
+        if (existing is not null && existing.IsVerified)
             return Conflict(new { message = "Email already in use." });
 
+        if (existing is not null)
+        {
+            _userRepo.Remove(existing);
+            await _userRepo.SaveAsync();
+        }
+
+        var hashedPrivateNumber = _hasher.HashPrivateNumber(request.PrivateNumber);
+        var hashedMobileNumber  = _hasher.HashMobileNumber(request.MobileNumber);
+
+        if (await _userRepo.ExistsByPrivateNumberAsync(hashedPrivateNumber))
+            return Conflict(new { message = "Private number already in use." });
+        if (await _userRepo.ExistsByMobileNumberAsync(hashedMobileNumber))
+            return Conflict(new { message = "Mobile number already in use." });
+
+        var code = Random.Shared.Next(100000, 1000000).ToString();
         var user = new User
         {
-            Name          = request.Name,
-            Surname       = request.Surname,
-            PrivateNumber = request.PrivateNumber,
-            MobileNumber  = request.MobileNumber,
-            Email         = request.Email,
-            Password      = BCrypt.Net.BCrypt.HashPassword(request.Password)
+            Name                  = request.Name,
+            Surname               = request.Surname,
+            PrivateNumber         = hashedPrivateNumber,
+            MobileNumber          = hashedMobileNumber,
+            Email                 = request.Email,
+            Password              = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            Role                  = UserRole.User,
+            IsVerified            = false,
+            VerificationCode      = code,
+            VerificationExpiresAt = DateTime.UtcNow.AddMinutes(2)
         };
 
         await _userRepo.AddAsync(user);
+        await _userRepo.SaveAsync();
+
+        try
+        {
+            await _emailService.SendAsync(
+                request.Email,
+                "Your verification code",
+                $"Your verification code is: {code}\n\nIt expires in 2 minutes.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Email send failed for {Email}. Dev fallback — code: {Code}", request.Email, code);
+        }
+
+        return Accepted(new { email = request.Email });
+    }
+
+    // ── POST api/users/verify ─────────────────────────────────────────────────
+    [HttpPost("verify")]
+    public async Task<IActionResult> VerifyEmail(VerifyEmailRequest request)
+    {
+        var user = await _userRepo.GetByEmailAsync(request.Email);
+        if (user is null || user.VerificationCode is null)
+            return BadRequest(new { message = "Verification not requested." });
+
+        if (user.IsVerified)
+            return BadRequest(new { message = "Email already verified." });
+
+        if (user.VerificationExpiresAt is null || user.VerificationExpiresAt < DateTime.UtcNow)
+            return BadRequest(new { message = "Verification code expired. Please register again." });
+
+        if (user.VerificationCode != request.Code)
+            return BadRequest(new { message = "Invalid verification code." });
+
+        user.IsVerified            = true;
+        user.VerificationCode      = null;
+        user.VerificationExpiresAt = null;
+        _userRepo.Update(user);
         await _userRepo.SaveAsync();
 
         var response = await CreateSessionAsync(user);
@@ -54,9 +145,12 @@ public class UsersController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        var user = await _userRepo.GetByEmailAsync(request.Email);
+        var user = await _userRepo.GetByAuthParamAsync(_hasher.HashPrivateNumber(request.PrivateNumber));
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
             return Unauthorized(new { message = "Invalid email or password." });
+
+        if (!user.IsVerified)
+            return Unauthorized(new { message = "Please verify your email before logging in." });
 
         await _sessionRepo.DeleteByUserIdAsync(user.Id);
 
@@ -154,7 +248,8 @@ public class UsersController : ControllerBase
         {
             new Claim(JwtRegisteredClaimNames.Sub,   user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString())
+            new Claim(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.Role,               user.Role.ToString())
         };
 
         var jwt = new JwtSecurityToken(

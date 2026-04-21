@@ -44,12 +44,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(u => u.Id).HasColumnName("id");
             e.Property(u => u.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
             e.Property(u => u.Surname).HasColumnName("surname").HasMaxLength(100).IsRequired();
-            e.Property(u => u.PrivateNumber).HasColumnName("private_number").HasMaxLength(20).IsRequired();
-            e.Property(u => u.MobileNumber).HasColumnName("mobile_number").HasMaxLength(20).IsRequired();
-            e.Property(u => u.Email).HasColumnName("email").HasMaxLength(200).IsRequired();
+            e.Property(u => u.PrivateNumber).HasColumnName("private_number").IsRequired();
+            e.Property(u => u.MobileNumber).HasColumnName("mobile_number").HasMaxLength(128).IsRequired();
+            e.Property(u => u.Email).HasColumnName("email").IsRequired();
             e.Property(u => u.Password).HasColumnName("password").IsRequired();
+            e.Property(u => u.Role).HasColumnName("role").HasConversion<int>().HasDefaultValue(UserRole.User).IsRequired();
+            e.Property(u => u.IsVerified).HasColumnName("is_verified").HasDefaultValue(false).IsRequired();
+            e.Property(u => u.VerificationCode).HasColumnName("verification_code").HasMaxLength(10);
+            e.Property(u => u.VerificationExpiresAt).HasColumnName("verification_expires_at");
 
             e.HasIndex(u => u.PrivateNumber).IsUnique();
+            e.HasIndex(u => u.MobileNumber).IsUnique();
             e.HasIndex(u => u.Email).IsUnique();
         });
 

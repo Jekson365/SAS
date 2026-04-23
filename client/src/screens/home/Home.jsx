@@ -1,11 +1,29 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import iconLight from '../../assets/icon-light.png'
 import practiceTests from '../../data/practiceTests.json'
 import { useCurrentUser } from '../../hooks/users/useCurrentUser'
 import { useLogout } from '../../hooks/users/useLogout'
 import { useTests } from '../../hooks/tests/useTests'
 import { useStartTest } from '../../hooks/tests/useStartTest'
 import { useUserTestResults } from '../../hooks/tests/useUserTestResults'
+import { useRegisterForTest } from '../../hooks/tests/useRegisterForTest'
+import { useUserRegistrations } from '../../hooks/tests/useUserRegistrations'
+import { useDeleteTest } from '../../hooks/tests/useDeleteTest'
+import {
+  TrophyIcon,
+  TrophyBrokenIcon,
+  TrashIcon,
+  FileIcon,
+  UserIcon,
+  HomeIcon,
+  PlusCircleIcon,
+  LogoutIcon,
+  MenuIcon,
+  GridIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from '../../assets/icons'
 
 const NEWS_SLIDES = [
   { id: 1, title: 'სიახლე პირველი', text: 'მოკლე აღწერა პირველი სიახლისთვის.' },
@@ -47,43 +65,11 @@ function formatRelativeTime(iso) {
   return past ? `${parts} წინ` : `${parts}-ში`
 }
 
-function TrophyIcon() {
-  return (
-    <svg className="trophy succeed" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M6 2h12v6a6 6 0 0 1-12 0V2z"/>
-      <path d="M6 4H3a2 2 0 0 0-2 2v1a4 4 0 0 0 4 4"/>
-      <path d="M18 4h3a2 2 0 0 1 2 2v1a4 4 0 0 1-4 4"/>
-      <path d="M12 14v4"/>
-      <path d="M8 22h8"/>
-      <path d="M12 18h0"/>
-    </svg>
-  )
-} 
-
-function BrokenTrophyIcon() {
-  return (
-    <svg className="trophy failed" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M6 2h12v6a6 6 0 0 1-12 0V2z"/>
-      <path d="M6 4H3a2 2 0 0 0-2 2v1a4 4 0 0 0 4 4"/>
-      <path d="M18 4h3a2 2 0 0 1 2 2v1a4 4 0 0 1-4 4"/>
-      <path d="M12 14v4"/>
-      <path d="M8 22h8"/>
-      <line x1="4" y1="4" x2="20" y2="20" strokeDasharray="3 2"/>
-    </svg>
-  )
-}
-
 function PracticeCard({ test }) {
   return (
     <div className="box test-card practice">
       <div className="practice-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10 9 9 9 8 9"/>
-        </svg>
+        <FileIcon />
       </div>
 
       <span className="test-subject">{test.subject}</span>
@@ -105,14 +91,24 @@ function PracticeCard({ test }) {
   )
 }
 
-function TestCard({ test, upcoming, isAdmin, onStart }) {
+function TestCard({ test, upcoming, isAdmin, onStart, onRegister, onDelete, registered }) {
   const navigate = useNavigate()
   const subjectName = test.subject?.name ?? test.subject ?? '—'
   return (
     <div className={`box test-card ${upcoming ? 'upcoming' : test.succeed ? 'success' : 'failed'}`}>
+      {isAdmin && upcoming && onDelete && (
+        <button
+          className="test-delete-btn"
+          onClick={() => onDelete(test)}
+          title="ტესტის წაშლა"
+          aria-label="ტესტის წაშლა"
+        >
+          <TrashIcon />
+        </button>
+      )}
       <div className="test-card-top">
         <span className="test-subject">{subjectName}</span>
-        {!upcoming && (test.succeed ? <TrophyIcon /> : <BrokenTrophyIcon />)}
+        {!upcoming && (test.succeed ? <TrophyIcon className="trophy succeed" /> : <TrophyBrokenIcon className="trophy failed" />)}
       </div>
 
       <div className="test-card-meta">
@@ -151,7 +147,7 @@ function TestCard({ test, upcoming, isAdmin, onStart }) {
           ? (
             <div className="test-card-actions">
               <button
-                className="register-btn"
+                className="register-btn practice-start-btn"
                 disabled={test.on_going}
                 title={test.on_going ? 'ვერ რედაქტირდება მიმდინარე ტესტი' : undefined}
                 onClick={() => !test.on_going && navigate(`/edit-test/${test.id}`)}
@@ -163,15 +159,19 @@ function TestCard({ test, upcoming, isAdmin, onStart }) {
               )}
             </div>
           )
-          : <button className="register-btn">რეგისტრაცია</button>
+          : registered
+            ? <button className="register-btn" disabled>რეგისრირებული</button>
+            : <button className="register-btn" onClick={() => onRegister?.(test)}>რეგისტრაცია</button>
       )}
     </div>
   )
 }
 
-function OngoingCard({ test, taken, isAdmin, onStop }) {
+function OngoingCard({ test, taken, isAdmin, onStop, registration }) {
   const navigate = useNavigate()
   const subjectName = test.subject?.name ?? test.subject ?? '—'
+  const isRegistered = Boolean(registration)
+  const isPaid       = Boolean(registration?.is_paid)
   return (
     <div className={`box test-card ongoing ${taken ? 'taken' : ''}`}>
       <div className="test-card-top">
@@ -210,7 +210,11 @@ function OngoingCard({ test, taken, isAdmin, onStop }) {
         </div>
       ) : taken
         ? <div className="ongoing-taken-label">ტესტი უკვე ჩაბარებულია</div>
-        : <button className="register-btn ongoing-enter-btn" onClick={() => navigate(`/test/${test.id}`)}>ტესტში შესვლა</button>
+        : !isRegistered
+          ? <button className="register-btn" disabled>არ ხართ რეგისტრირებული</button>
+          : !isPaid
+            ? <button className="register-btn" disabled>გადახდა არ არის დასრულებული</button>
+            : <button className="register-btn ongoing-enter-btn" onClick={() => navigate(`/test/${test.id}`)}>ტესტში შესვლა</button>
       }
     </div>
   )
@@ -220,6 +224,7 @@ function Home() {
   const [slide, setSlide] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [rightOpen, setRightOpen] = useState(false)
+  const [registerModal, setRegisterModal] = useState({ test: null, stage: 'confirm', done: false })
   const navigate = useNavigate()
 
   const { user } = useCurrentUser()
@@ -228,6 +233,11 @@ function Home() {
   const { tests, loading: testsLoading, refetch: refetchTests } = useTests()
   const { startTest, stopTest } = useStartTest()
   const { results: userResults } = useUserTestResults()
+  const { registerAndPay, loading: registering, error: registerError } = useRegisterForTest()
+  const { registrations, refetch: refetchRegistrations } = useUserRegistrations()
+  const { deleteTest } = useDeleteTest()
+  const registeredTestIds   = new Set(registrations.map(r => r.test_id))
+  const registrationsByTest = new Map(registrations.map(r => [r.test_id, r]))
 
   const handleStartTest = async (id) => {
     const ok = await startTest(id)
@@ -237,6 +247,35 @@ function Home() {
   const handleStopTest = async (id) => {
     const ok = await stopTest(id)
     if (ok) await refetchTests()
+  }
+
+  const handleDeleteTest = async (test) => {
+    const subjectName = test.subject?.name ?? test.subject ?? ''
+    const label = [subjectName, test.etapi].filter(Boolean).join(' — ')
+    const confirmMsg = label
+      ? `წავშალოთ ტესტი "${label}"?`
+      : 'წავშალოთ ეს ტესტი?'
+    if (!window.confirm(confirmMsg)) return
+    const ok = await deleteTest(test.id)
+    if (ok) await refetchTests()
+  }
+
+  const openRegisterModal = (test) =>
+    setRegisterModal({ test, stage: 'confirm', done: false })
+
+  const closeRegisterModal = () =>
+    setRegisterModal({ test: null, stage: 'confirm', done: false })
+
+  const handleConfirmRegister = () =>
+    setRegisterModal(prev => ({ ...prev, stage: 'pay' }))
+
+  const handlePay = async () => {
+    if (!registerModal.test) return
+    const saved = await registerAndPay(registerModal.test.id)
+    if (saved) {
+      await refetchRegistrations()
+      setRegisterModal(prev => ({ ...prev, done: true }))
+    }
   }
 
   const handleLogout = async () => {
@@ -271,6 +310,9 @@ function Home() {
     succeed:        r.passed,
   }))
 
+
+  console.log(completedTests)
+
   const prev = () => setSlide(s => (s === 0 ? NEWS_SLIDES.length - 1 : s - 1))
   const next = () => setSlide(s => (s === NEWS_SLIDES.length - 1 ? 0 : s + 1))
 
@@ -283,16 +325,13 @@ function Home() {
       {/* ── Sidebar ── */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
-          <span className="logo-dot" />
-          აპლიკაცია
+          <img src={iconLight} alt="" className="logo-icon" />
+          ინოვატორი
         </div>
 
         <div className="sidebar-profile">
           <div className="profile-avatar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="12" cy="8" r="4"/>
-              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-            </svg>
+            <UserIcon />
           </div>
           <div className="profile-info">
             <span className="profile-name">
@@ -308,30 +347,19 @@ function Home() {
 
         <nav className="sidebar-nav">
           <button className="nav-item active" onClick={() => setSidebarOpen(false)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
+            <HomeIcon />
             მთავარი
           </button>
           {isAdmin && (
             <button className="nav-item" onClick={() => navigate('/create-test')}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="16"/>
-                <line x1="8" y1="12" x2="16" y2="12"/>
-              </svg>
+              <PlusCircleIcon />
               ტესტის შექმნა
             </button>
           )}
         </nav>
 
         <button className="nav-item logout" onClick={handleLogout} disabled={loggingOut}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
+          <LogoutIcon />
           {loggingOut ? '...' : 'გასვლა'}
         </button>
       </aside>
@@ -341,20 +369,11 @@ function Home() {
 
         <div className="mobile-topbar">
           <button className="hamburger" onClick={() => setSidebarOpen(o => !o)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="6"  x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
+            <MenuIcon />
           </button>
           <span className="topbar-title">მთავარი</span>
           <button className="hamburger" onClick={() => setRightOpen(o => !o)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" rx="1"/>
-              <rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="3" y="14" width="7" height="7" rx="1"/>
-              <rect x="14" y="14" width="7" height="7" rx="1"/>
-            </svg>
+            <GridIcon />
           </button>
         </div>
 
@@ -366,9 +385,7 @@ function Home() {
           </div>
           <div className="slide-controls">
             <button onClick={prev} className="slide-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="15 18 9 12 15 6"/>
-              </svg>
+              <ChevronLeftIcon />
             </button>
             <div className="slide-dots">
               {NEWS_SLIDES.map((_, i) => (
@@ -376,9 +393,7 @@ function Home() {
               ))}
             </div>
             <button onClick={next} className="slide-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
+              <ChevronRightIcon />
             </button>
           </div>
         </section>
@@ -391,7 +406,14 @@ function Home() {
               ? <p className="section-empty">იტვირთება...</p>
               : <div className="boxes-grid">
                   {ongoingTests.map(test => (
-                    <OngoingCard key={test.id} test={test} taken={takenTestIds.has(test.id)} isAdmin={isAdmin} onStop={handleStopTest} />
+                    <OngoingCard
+                      key={test.id}
+                      test={test}
+                      taken={takenTestIds.has(test.id)}
+                      isAdmin={isAdmin}
+                      onStop={handleStopTest}
+                      registration={registrationsByTest.get(test.id) ?? null}
+                    />
                   ))}
                 </div>
             }
@@ -403,7 +425,16 @@ function Home() {
           <h3 className="section-title">სამომავლო ტესტები</h3>
           <div className="boxes-grid">
             {futureTests.map(test => (
-              <TestCard key={test.id} test={test} upcoming isAdmin={isAdmin} onStart={handleStartTest} />
+              <TestCard
+                key={test.id}
+                test={test}
+                upcoming
+                isAdmin={isAdmin}
+                onStart={handleStartTest}
+                onRegister={openRegisterModal}
+                onDelete={handleDeleteTest}
+                registered={registeredTestIds.has(test.id)}
+              />
             ))}
           </div>
         </section>
@@ -438,6 +469,47 @@ function Home() {
           <div key={n} className="side-box" />
         ))}
       </aside>
+
+      {/* ── Registration modal ── */}
+      {registerModal.test && (
+        <div className="reg-modal-overlay" onClick={closeRegisterModal}>
+          <div className="reg-modal" onClick={e => e.stopPropagation()}>
+            <button className="reg-modal-close" onClick={closeRegisterModal} aria-label="დახურვა">×</button>
+
+            {registerModal.done ? (
+              <>
+                <h3 className="reg-modal-title">რეგისტრაცია დასრულდა ✓</h3>
+                <p className="reg-modal-sub">
+                  {registerModal.test.subject?.name ?? registerModal.test.subject ?? ''} — {registerModal.test.etapi}
+                </p>
+                <button className="reg-modal-primary" onClick={closeRegisterModal}>დახურვა</button>
+              </>
+            ) : registerModal.stage === 'confirm' ? (
+              <>
+                <h3 className="reg-modal-title">გსურთ რეგისტრაცია?</h3>
+                <p className="reg-modal-sub">
+                  {registerModal.test.subject?.name ?? registerModal.test.subject ?? ''} — {registerModal.test.etapi}
+                </p>
+                <div className="reg-modal-actions">
+                  <button className="reg-modal-secondary" onClick={closeRegisterModal}>არა</button>
+                  <button className="reg-modal-primary" onClick={handleConfirmRegister}>კი</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="reg-modal-title">გადახდა</h3>
+                <p className="reg-modal-sub">
+                  {registerModal.test.subject?.name ?? registerModal.test.subject ?? ''} — {registerModal.test.etapi}
+                </p>
+                {registerError && <p className="reg-modal-error">{registerError}</p>}
+                <button className="reg-modal-primary" onClick={handlePay} disabled={registering}>
+                  {registering ? 'მიმდინარეობს...' : 'გადახდა'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   )

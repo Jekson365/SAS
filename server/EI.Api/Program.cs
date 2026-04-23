@@ -30,6 +30,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
 builder.Services.AddScoped<ITestResultRepository, TestResultRepository>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+builder.Services.AddScoped<ITestRegistrationRepository, TestRegistrationRepository>();
 
 builder.Services.AddSingleton<IHashingService, HashingService>();
 builder.Services.AddSingleton<IVerificationStore, VerificationStore>();

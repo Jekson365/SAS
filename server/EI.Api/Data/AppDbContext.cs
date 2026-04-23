@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<TestResult> TestResults => Set<TestResult>();
     public DbSet<Question> Questions => Set<Question>();
+    public DbSet<TestRegistration> TestRegistrations => Set<TestRegistration>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -97,11 +98,27 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(q => q.QuestionText).HasColumnName("question_text").IsRequired();
             e.Property(q => q.Options).HasColumnName("options").HasColumnType("jsonb");
             e.Property(q => q.CorrectIndex).HasColumnName("correct_index");
+            e.Property(q => q.Point).HasColumnName("point").HasDefaultValue(1).IsRequired();
 
             e.HasOne(q => q.Test)
              .WithMany()
              .HasForeignKey(q => q.TestId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TestRegistration>(e =>
+        {
+            e.ToTable("test_registrations");
+            e.Property(r => r.Id).HasColumnName("id");
+            e.Property(r => r.UserId).HasColumnName("user_id");
+            e.Property(r => r.TestId).HasColumnName("test_id");
+            e.Property(r => r.RegistrationDate).HasColumnName("registration_date");
+            e.Property(r => r.IsPaid).HasColumnName("is_paid").HasDefaultValue(false).IsRequired();
+
+            e.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.Test).WithMany().HasForeignKey(r => r.TestId).OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(r => new { r.UserId, r.TestId }).IsUnique();
         });
     }
 }

@@ -7,7 +7,10 @@ namespace EI.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TestsController(ITestRepository repo, IQuestionRepository questionRepo) : ControllerBase
+public class TestsController(
+    ITestRepository repo,
+    IQuestionRepository questionRepo,
+    ITestRegistrationRepository registrationRepo) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll() =>
@@ -24,6 +27,18 @@ public class TestsController(ITestRepository repo, IQuestionRepository questionR
     public async Task<IActionResult> GetQuestions(int id) =>
         Ok(await questionRepo.GetByTestIdAsync(id));
 
+    [HttpGet("{id:int}/take/{userId:int}")]
+    public async Task<IActionResult> GetQuestionsForUser(int id, int userId)
+    {
+        var reg = await registrationRepo.GetByUserAndTestAsync(userId, id);
+        if (reg is null)
+            return StatusCode(403, new { message = "არ ხართ რეგისტრირებული ამ ტესტზე." });
+        if (!reg.IsPaid)
+            return StatusCode(403, new { message = "გადახდა არ არის დასრულებული." });
+
+        return Ok(await questionRepo.GetByTestIdAsync(id));
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create(CreateTestRequest request)
     {
@@ -32,7 +47,7 @@ public class TestsController(ITestRepository repo, IQuestionRepository questionR
             SubjectId    = request.SubjectId,
             Etapi        = request.Etapi,
             TestStartDate = DateTime.SpecifyKind(request.TestStartDate, DateTimeKind.Utc),
-            MaxScore     = request.MaxScore,
+            MaxScore     = request.Questions.Sum(q => q.Point),
             PassScore    = request.PassScore,
         };
 
@@ -47,6 +62,7 @@ public class TestsController(ITestRepository repo, IQuestionRepository questionR
                 QuestionText = q.QuestionText,
                 Options      = q.Options,
                 CorrectIndex = q.CorrectIndex,
+                Point        = q.Point,
             });
         }
 
@@ -68,7 +84,7 @@ public class TestsController(ITestRepository repo, IQuestionRepository questionR
         test.SubjectId     = request.SubjectId;
         test.Etapi         = request.Etapi;
         test.TestStartDate = DateTime.SpecifyKind(request.TestStartDate, DateTimeKind.Utc);
-        test.MaxScore      = request.MaxScore;
+        test.MaxScore      = request.Questions.Sum(q => q.Point);
         test.PassScore     = request.PassScore;
 
         repo.Update(test);
@@ -85,6 +101,7 @@ public class TestsController(ITestRepository repo, IQuestionRepository questionR
                 QuestionText = q.QuestionText,
                 Options      = q.Options,
                 CorrectIndex = q.CorrectIndex,
+                Point        = q.Point,
             });
         }
 

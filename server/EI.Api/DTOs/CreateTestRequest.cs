@@ -13,9 +13,6 @@ public class CreateTestRequest
     [JsonPropertyName("test_start_date")]
     public DateTime TestStartDate { get; set; }
 
-    [JsonPropertyName("max_score")]
-    public int MaxScore { get; set; }
-
     [JsonPropertyName("pass_score")]
     public int PassScore { get; set; }
 

@@ -12,6 +12,7 @@ const emptyQuestion = () => ({
   question_text: '',
   options: ['', '', '', ''],
   correct_index: 0,
+  point: 1,
 })
 
 function toLocalDateTimeInput(iso) {
@@ -34,11 +35,12 @@ function EditTest() {
     subjectId:     '',
     etapi:         '',
     testStartDate: '',
-    maxScore:      '',
     passScore:     '',
   })
 
   const [questions, setQuestions] = useState([emptyQuestion()])
+
+  const totalPoints = questions.reduce((sum, q) => sum + (Number(q.point) || 0), 0)
 
   useEffect(() => {
     if (!test) return
@@ -46,7 +48,6 @@ function EditTest() {
       subjectId:     String(test.subject_id ?? test.subject?.id ?? ''),
       etapi:         test.etapi ?? '',
       testStartDate: toLocalDateTimeInput(test.test_start_date),
-      maxScore:      String(test.max_score ?? ''),
       passScore:     String(test.pass_score ?? ''),
     })
   }, [test])
@@ -60,6 +61,7 @@ function EditTest() {
                          ? q.options
                          : ['', '', '', ''],
         correct_index: q.correct_index ?? 0,
+        point:         q.point ?? 1,
       }))
     )
   }, [loadedQuestions])
@@ -77,6 +79,9 @@ function EditTest() {
   const setQCorrect = (qi, val) =>
     setQuestions(prev => prev.map((q, i) => i === qi ? { ...q, correct_index: Number(val) } : q))
 
+  const setQPoint = (qi, val) =>
+    setQuestions(prev => prev.map((q, i) => i === qi ? { ...q, point: val === '' ? '' : Math.max(1, Number(val)) } : q))
+
   const addQuestion = () => setQuestions(prev => [...prev, emptyQuestion()])
 
   const removeQuestion = (qi) =>
@@ -88,9 +93,8 @@ function EditTest() {
       subject_id:      Number(fields.subjectId),
       etapi:           fields.etapi,
       test_start_date: fields.testStartDate,
-      max_score:       Number(fields.maxScore),
       pass_score:      Number(fields.passScore),
-      questions:       questions,
+      questions:       questions.map(q => ({ ...q, point: Number(q.point) || 1 })),
     }
     const ok = await updateTest(id, payload)
     if (ok) navigate('/home')
@@ -192,11 +196,9 @@ function EditTest() {
               <input
                 type="number"
                 className="ct-input"
-                placeholder="100"
-                min="1"
-                value={fields.maxScore}
-                onChange={set('maxScore')}
-                required
+                value={totalPoints}
+                readOnly
+                tabIndex={-1}
               />
             </div>
             <div className="ct-field">
@@ -221,6 +223,7 @@ function EditTest() {
               </button>
             </div>
 
+            <div className="ct-questions-grid">
             {questions.map((q, qi) => (
               <div key={qi} className="ct-question-card">
                 <div className="ct-question-card-header">
@@ -281,8 +284,21 @@ function EditTest() {
                     ))}
                   </div>
                 </div>
+
+                <div className="ct-field">
+                  <label className="ct-label">ქულა</label>
+                  <input
+                    type="number"
+                    className="ct-input"
+                    min="1"
+                    value={q.point}
+                    onChange={e => setQPoint(qi, e.target.value)}
+                    required
+                  />
+                </div>
               </div>
             ))}
+            </div>
           </div>
 
           {error && <p className="ct-error">{error}</p>}

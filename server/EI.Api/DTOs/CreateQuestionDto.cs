@@ -12,4 +12,7 @@ public class CreateQuestionDto
 
     [JsonPropertyName("correct_index")]
     public int CorrectIndex { get; set; }
+
+    [JsonPropertyName("point")]
+    public int Point { get; set; } = 1;
 }

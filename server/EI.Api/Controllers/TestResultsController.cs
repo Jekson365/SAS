@@ -11,10 +11,12 @@ namespace EI.Api.Controllers;
 public class TestResultsController : ControllerBase
 {
     private readonly ITestResultRepository _repo;
+    private readonly ITestRegistrationRepository _regRepo;
 
-    public TestResultsController(ITestResultRepository repo)
+    public TestResultsController(ITestResultRepository repo, ITestRegistrationRepository regRepo)
     {
         _repo = repo;
+        _regRepo = regRepo;
     }
 
     [HttpGet]
@@ -39,6 +41,10 @@ public class TestResultsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(TestResult result)
     {
+        var reg = await _regRepo.GetByUserAndTestAsync(result.UserId, result.TestId);
+        if (reg is null || !reg.IsPaid)
+            return StatusCode(403, new { message = "რეგისტრაცია ან გადახდა არ არის დასრულებული." });
+
         result.SubmittedAt = DateTime.UtcNow;
         await _repo.AddAsync(result);
         await _repo.SaveAsync();

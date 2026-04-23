@@ -222,6 +222,13 @@
         background: $color-teal;
         flex-shrink: 0;
       }
+
+      .logo-icon {
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
+        flex-shrink: 0;
+      }
     }
 
     .sidebar-profile {
@@ -480,11 +487,46 @@
           flex-direction: column;
           gap: 10px;
           border-top: 4px solid rgba($color-primary, 0.25);
+          position: relative;
 
           &.upcoming  { border-top-color: $color-teal; }
           &.success   { border-top-color: $color-green; }
           &.failed    { border-top-color: $color-red; }
           &.ongoing   { border-top-color: $color-orange; }
+        }
+
+        .test-delete-btn {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 28px;
+          height: 28px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: transparent;
+          border: none;
+          border-radius: 8px;
+          color: rgba($color-danger, 0.75);
+          cursor: pointer;
+          transition: background 0.2s, color 0.2s;
+          z-index: 1;
+
+          svg {
+            width: 16px;
+            height: 16px;
+          }
+
+          &:hover {
+            background: rgba($color-danger, 0.12);
+            color: $color-danger;
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
         }
 
         .test-card-top {
@@ -1355,7 +1397,7 @@
 
 .create-test-container {
   width: 100%;
-  max-width: 560px;
+  max-width: 1500px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -1464,6 +1506,21 @@
   gap: 16px;
 }
 
+.ct-questions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  align-items: start;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include respond-mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
 .ct-questions-header {
   display: flex;
   align-items: center;
@@ -1491,10 +1548,11 @@
   background: #FEF9EF;
   border: 1.5px solid rgba($color-dark, 0.1);
   border-radius: 14px;
-  padding: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .ct-question-card-header {
@@ -1592,4 +1650,106 @@
   &:hover:not(.selected) {
     border-color: rgba($color-dark, 0.25);
   }
+}
+
+// ── Registration modal ─────────────────────────────────────────────────────
+.reg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.reg-modal {
+  position: relative;
+  background: $color-light;
+  border-radius: 20px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reg-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: rgba($color-dark, 0.5);
+  cursor: pointer;
+
+  &:hover { color: $color-dark; }
+}
+
+.reg-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: $color-dark;
+  text-align: center;
+}
+
+.reg-modal-sub {
+  font-size: 13px;
+  color: rgba($color-dark, 0.6);
+  text-align: center;
+}
+
+.reg-modal-error {
+  font-size: 12px;
+  color: $color-orange;
+  background: rgba($color-orange, 0.08);
+  padding: 6px 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.reg-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.reg-modal-primary {
+  flex: 1;
+  padding: 11px;
+  background: $color-teal;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: $font-georgian;
+  transition: background 0.2s, opacity 0.2s;
+
+  &:hover:not(:disabled) { background: $color-dark; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.reg-modal-secondary {
+  flex: 1;
+  padding: 11px;
+  background: transparent;
+  color: $color-dark;
+  border: 1.5px solid rgba($color-dark, 0.2);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: $font-georgian;
+  transition: border-color 0.2s, background 0.2s;
+
+  &:hover { border-color: $color-dark; background: rgba($color-dark, 0.04); }
 }

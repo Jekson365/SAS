@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTest } from '../../hooks/tests/useTest'
-import { useTestQuestions } from '../../hooks/tests/useTestQuestions'
+import { useTakeTestQuestions } from '../../hooks/tests/useTakeTestQuestions'
 import { useSubmitTestResult } from '../../hooks/useSubmitTestResult'
 
 function OngoingTest() {
@@ -9,7 +9,7 @@ function OngoingTest() {
   const navigate = useNavigate()
 
   const { test,      loading: testLoading }      = useTest(id)
-  const { questions, loading: questionsLoading } = useTestQuestions(id)
+  const { questions, loading: questionsLoading, forbidden } = useTakeTestQuestions(id)
 
   const { submitResult, loading: saving, error: saveError } = useSubmitTestResult()
 
@@ -39,6 +39,17 @@ function OngoingTest() {
     )
   }
 
+  if (forbidden) {
+    return (
+      <div className="ongoing-test-wrapper">
+        <div className="ongoing-test-not-found">
+          <p>{forbidden}</p>
+          <button className="ongoing-back-btn" onClick={() => navigate('/home')}>მთავარზე დაბრუნება</button>
+        </div>
+      </div>
+    )
+  }
+
   const subjectName    = test.subject?.name ?? test.subject ?? '—'
   const q              = questions[current]
   const totalAnswered  = Object.keys(answers).length
@@ -49,12 +60,12 @@ function OngoingTest() {
     setAnswers(prev => ({ ...prev, [q.id]: optionIndex }))
   }
 
+  const totalPoints = questions.reduce((sum, q) => sum + (Number(q.point) || 1), 0)
+
   function calcScore() {
-    let correct = 0
-    questions.forEach(q => {
-      if (answers[q.id] === q.correct_index) correct++
-    })
-    return Math.round((correct / questions.length) * test.max_score)
+    return questions.reduce((sum, q) => (
+      answers[q.id] === q.correct_index ? sum + (Number(q.point) || 1) : sum
+    ), 0)
   }
 
   async function handleSubmit() {
@@ -107,7 +118,7 @@ function OngoingTest() {
             </div>
             <div className="ongoing-result-score">
               <span className={passed ? 'score-green' : 'score-red'}>{score}</span>
-              <span className="score-max"> / {test.max_score}</span>
+              <span className="score-max"> / {totalPoints}</span>
             </div>
             <div className="ongoing-result-meta">
               გასვლის ქულა: <strong>{test.pass_score}</strong>

@@ -45,6 +45,9 @@ public class TestResultsController : ControllerBase
         if (reg is null || !reg.IsPaid)
             return StatusCode(403, new { message = "რეგისტრაცია ან გადახდა არ არის დასრულებული." });
 
+        if (await _repo.ExistsForUserAndTestAsync(result.UserId, result.TestId))
+            return Conflict(new { message = "ეს ტესტი უკვე ჩაბარებული გაქვთ." });
+
         result.SubmittedAt = DateTime.UtcNow;
         await _repo.AddAsync(result);
         await _repo.SaveAsync();

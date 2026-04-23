@@ -10,7 +10,8 @@ namespace EI.Api.Controllers;
 public class TestsController(
     ITestRepository repo,
     IQuestionRepository questionRepo,
-    ITestRegistrationRepository registrationRepo) : ControllerBase
+    ITestRegistrationRepository registrationRepo,
+    ITestResultRepository resultRepo) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll() =>
@@ -36,6 +37,9 @@ public class TestsController(
         if (!reg.IsPaid)
             return StatusCode(403, new { message = "გადახდა არ არის დასრულებული." });
 
+        if (await resultRepo.ExistsForUserAndTestAsync(userId, id))
+            return StatusCode(403, new { message = "ეს ტესტი უკვე ჩაბარებული გაქვთ." });
+
         return Ok(await questionRepo.GetByTestIdAsync(id));
     }
 
@@ -49,6 +53,7 @@ public class TestsController(
             TestStartDate = DateTime.SpecifyKind(request.TestStartDate, DateTimeKind.Utc),
             MaxScore     = request.Questions.Sum(q => q.Point),
             PassScore    = request.PassScore,
+            DurationMinutes = request.DurationMinutes,
         };
 
         await repo.AddAsync(test);
@@ -58,11 +63,14 @@ public class TestsController(
         {
             await questionRepo.AddAsync(new Question
             {
-                TestId       = test.Id,
-                QuestionText = q.QuestionText,
-                Options      = q.Options,
-                CorrectIndex = q.CorrectIndex,
-                Point        = q.Point,
+                TestId        = test.Id,
+                QuestionText  = q.QuestionText,
+                Options       = q.Options ?? [],
+                CorrectIndex  = q.CorrectIndex,
+                Point         = q.Point,
+                Type          = string.IsNullOrWhiteSpace(q.Type) ? "quiz" : q.Type,
+                ImageUrl      = q.ImageUrl,
+                CorrectAnswer = q.CorrectAnswer,
             });
         }
 
@@ -81,11 +89,12 @@ public class TestsController(
         if (test.OnGoing)
             return Conflict(new { message = "Cannot edit a test that is currently ongoing. Stop it first." });
 
-        test.SubjectId     = request.SubjectId;
-        test.Etapi         = request.Etapi;
-        test.TestStartDate = DateTime.SpecifyKind(request.TestStartDate, DateTimeKind.Utc);
-        test.MaxScore      = request.Questions.Sum(q => q.Point);
-        test.PassScore     = request.PassScore;
+        test.SubjectId       = request.SubjectId;
+        test.Etapi           = request.Etapi;
+        test.TestStartDate   = DateTime.SpecifyKind(request.TestStartDate, DateTimeKind.Utc);
+        test.MaxScore        = request.Questions.Sum(q => q.Point);
+        test.PassScore       = request.PassScore;
+        test.DurationMinutes = request.DurationMinutes;
 
         repo.Update(test);
 
@@ -97,11 +106,14 @@ public class TestsController(
         {
             await questionRepo.AddAsync(new Question
             {
-                TestId       = id,
-                QuestionText = q.QuestionText,
-                Options      = q.Options,
-                CorrectIndex = q.CorrectIndex,
-                Point        = q.Point,
+                TestId        = id,
+                QuestionText  = q.QuestionText,
+                Options       = q.Options ?? [],
+                CorrectIndex  = q.CorrectIndex,
+                Point         = q.Point,
+                Type          = string.IsNullOrWhiteSpace(q.Type) ? "quiz" : q.Type,
+                ImageUrl      = q.ImageUrl,
+                CorrectAnswer = q.CorrectAnswer,
             });
         }
 
@@ -117,7 +129,8 @@ public class TestsController(
         var test = await repo.GetByIdAsync(id);
         if (test is null) return NotFound();
 
-        test.OnGoing = true;
+        test.OnGoing   = true;
+        test.StartedAt = DateTime.UtcNow;
         repo.Update(test);
         await repo.SaveAsync();
         return NoContent();
@@ -129,7 +142,8 @@ public class TestsController(
         var test = await repo.GetByIdAsync(id);
         if (test is null) return NotFound();
 
-        test.OnGoing = false;
+        test.OnGoing   = false;
+        test.StartedAt = null;
         repo.Update(test);
         await repo.SaveAsync();
         return NoContent();

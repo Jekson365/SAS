@@ -24,4 +24,13 @@ public class Question
 
     [JsonPropertyName("point")]
     public int Point { get; set; } = 1;
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "quiz";
+
+    [JsonPropertyName("image_url")]
+    public string? ImageUrl { get; set; }
+
+    [JsonPropertyName("correct_answer")]
+    public string? CorrectAnswer { get; set; }
 }

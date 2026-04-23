@@ -16,6 +16,9 @@ public class CreateTestRequest
     [JsonPropertyName("pass_score")]
     public int PassScore { get; set; }
 
+    [JsonPropertyName("duration_minutes")]
+    public int DurationMinutes { get; set; }
+
     [JsonPropertyName("questions")]
     public List<CreateQuestionDto> Questions { get; set; } = [];
 }

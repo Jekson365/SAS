@@ -2,15 +2,20 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCreateTest } from '../../hooks/tests/useCreateTest'
 import { useSubjects } from '../../hooks/tests/useSubjects'
+import DateTime24Picker from '../../components/DateTime24Picker'
+import { uploadQuestionImage, resolveImageUrl } from '../../api/questionImage'
 
 const ETAPI_OPTIONS = ['I ეტაპი', 'II ეტაპი', 'III ეტაპი', 'IV ეტაპი']
 const OPTION_LABELS = ['A', 'B', 'C', 'D']
 
 const emptyQuestion = () => ({
-  question_text: '',
-  options: ['', '', '', ''],
-  correct_index: 0,
-  point: 1,
+  question_text:  '',
+  options:        ['', '', '', ''],
+  correct_index:  0,
+  point:          1,
+  type:           'quiz',
+  image_url:      null,
+  correct_answer: '',
 })
 
 function CreateTest() {
@@ -19,10 +24,11 @@ function CreateTest() {
   const { subjects, loading: subjectsLoading } = useSubjects()
 
   const [fields, setFields] = useState({
-    subjectId:     '',
-    etapi:         '',
-    testStartDate: '',
-    passScore:     '',
+    subjectId:       '',
+    etapi:           '',
+    testStartDate:   '',
+    passScore:       '',
+    durationMinutes: '',
   })
 
   const [questions, setQuestions] = useState([emptyQuestion()])
@@ -45,6 +51,25 @@ function CreateTest() {
   const setQPoint = (qi, val) =>
     setQuestions(prev => prev.map((q, i) => i === qi ? { ...q, point: val === '' ? '' : Math.max(1, Number(val)) } : q))
 
+  const setQType = (qi, type) =>
+    setQuestions(prev => prev.map((q, i) => i === qi ? { ...q, type } : q))
+
+  const setQAnswer = (qi, val) =>
+    setQuestions(prev => prev.map((q, i) => i === qi ? { ...q, correct_answer: val } : q))
+
+  const setQImage = (qi, url) =>
+    setQuestions(prev => prev.map((q, i) => i === qi ? { ...q, image_url: url } : q))
+
+  const handleImageUpload = async (qi, file) => {
+    if (!file) return
+    try {
+      const url = await uploadQuestionImage(file)
+      if (url) setQImage(qi, url)
+    } catch {
+      alert('სურათის ატვირთვა ვერ მოხერხდა.')
+    }
+  }
+
   const addQuestion = () => setQuestions(prev => [...prev, emptyQuestion()])
 
   const removeQuestion = (qi) =>
@@ -53,11 +78,23 @@ function CreateTest() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     const payload = {
-      subject_id:      Number(fields.subjectId),
-      etapi:           fields.etapi,
-      test_start_date: fields.testStartDate,
-      pass_score:      Number(fields.passScore),
-      questions:       questions.map(q => ({ ...q, point: Number(q.point) || 1 })),
+      subject_id:       Number(fields.subjectId),
+      etapi:            fields.etapi,
+      test_start_date:  new Date(fields.testStartDate).toISOString(),
+      pass_score:       Number(fields.passScore),
+      duration_minutes: Number(fields.durationMinutes) || 0,
+      questions:        questions.map(q => {
+        const isOpen = q.type === 'open'
+        return {
+          question_text:  q.question_text,
+          options:        isOpen ? [] : q.options,
+          correct_index:  isOpen ? 0  : q.correct_index,
+          point:          Number(q.point) || 1,
+          type:           q.type || 'quiz',
+          image_url:      q.image_url || null,
+          correct_answer: isOpen ? (q.correct_answer ?? '') : null,
+        }
+      }),
     }
     const data = await createTest(payload)
     if (data) navigate('/home')
@@ -116,11 +153,9 @@ function CreateTest() {
 
           <div className="ct-field">
             <label className="ct-label">ტესტის თარიღი და საათი</label>
-            <input
-              type="datetime-local"
-              className="ct-input"
+            <DateTime24Picker
               value={fields.testStartDate}
-              onChange={set('testStartDate')}
+              onChange={val => setFields(prev => ({ ...prev, testStartDate: val }))}
               required
             />
           </div>
@@ -145,6 +180,18 @@ function CreateTest() {
                 min="1"
                 value={fields.passScore}
                 onChange={set('passScore')}
+                required
+              />
+            </div>
+            <div className="ct-field">
+              <label className="ct-label">ხანგრძლივობა (წუთი)</label>
+              <input
+                type="number"
+                className="ct-input"
+                placeholder="60"
+                min="1"
+                value={fields.durationMinutes}
+                onChange={set('durationMinutes')}
                 required
               />
             </div>
@@ -176,6 +223,26 @@ function CreateTest() {
                 </div>
 
                 <div className="ct-field">
+                  <label className="ct-label">ტიპი</label>
+                  <div className="ct-type-toggle">
+                    <button
+                      type="button"
+                      className={`ct-type-btn ${q.type === 'quiz' ? 'selected' : ''}`}
+                      onClick={() => setQType(qi, 'quiz')}
+                    >
+                      არჩევითი
+                    </button>
+                    <button
+                      type="button"
+                      className={`ct-type-btn ${q.type === 'open' ? 'selected' : ''}`}
+                      onClick={() => setQType(qi, 'open')}
+                    >
+                      ტექსტი
+                    </button>
+                  </div>
+                </div>
+
+                <div className="ct-field">
                   <label className="ct-label">კითხვის ტექსტი</label>
                   <input
                     type="text"
@@ -187,39 +254,76 @@ function CreateTest() {
                   />
                 </div>
 
-                <div className="ct-options-grid">
-                  {q.options.map((opt, oi) => (
-                    <div key={oi} className="ct-option-field">
-                      <label className="ct-option-label">{OPTION_LABELS[oi]}</label>
-                      <input
-                        type="text"
-                        className="ct-input ct-option-input"
-                        placeholder={`პასუხი ${OPTION_LABELS[oi]}...`}
-                        value={opt}
-                        onChange={e => setQOption(qi, oi, e.target.value)}
-                        required
-                      />
+                <div className="ct-field">
+                  <label className="ct-label">სურათი (არასავალდებულო)</label>
+                  {q.image_url && (
+                    <div className="ct-image-preview">
+                      <img src={resolveImageUrl(q.image_url)} alt="preview" />
+                      <button
+                        type="button"
+                        className="ct-image-remove"
+                        onClick={() => setQImage(qi, null)}
+                      >
+                        წაშლა
+                      </button>
                     </div>
-                  ))}
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => handleImageUpload(qi, e.target.files?.[0])}
+                  />
                 </div>
 
-                <div className="ct-correct-section">
-                  <label className="ct-label">სწორი პასუხი</label>
-                  <div className="ct-correct-options">
-                    {OPTION_LABELS.map((label, oi) => (
-                      <label key={oi} className={`ct-correct-option ${q.correct_index === oi ? 'selected' : ''}`}>
-                        <input
-                          type="radio"
-                          name={`correct-${qi}`}
-                          value={oi}
-                          checked={q.correct_index === oi}
-                          onChange={() => setQCorrect(qi, oi)}
-                        />
-                        {label}
-                      </label>
-                    ))}
+                {q.type === 'quiz' ? (
+                  <>
+                    <div className="ct-options-grid">
+                      {q.options.map((opt, oi) => (
+                        <div key={oi} className="ct-option-field">
+                          <label className="ct-option-label">{OPTION_LABELS[oi]}</label>
+                          <input
+                            type="text"
+                            className="ct-input ct-option-input"
+                            placeholder={`პასუხი ${OPTION_LABELS[oi]}...`}
+                            value={opt}
+                            onChange={e => setQOption(qi, oi, e.target.value)}
+                            required
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="ct-correct-section">
+                      <label className="ct-label">სწორი პასუხი</label>
+                      <div className="ct-correct-options">
+                        {OPTION_LABELS.map((label, oi) => (
+                          <label key={oi} className={`ct-correct-option ${q.correct_index === oi ? 'selected' : ''}`}>
+                            <input
+                              type="radio"
+                              name={`correct-${qi}`}
+                              value={oi}
+                              checked={q.correct_index === oi}
+                              onChange={() => setQCorrect(qi, oi)}
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="ct-field">
+                    <label className="ct-label">სწორი პასუხი</label>
+                    <input
+                      type="text"
+                      className="ct-input"
+                      placeholder="მოსწავლის მიერ აკრეფილი ტექსტი..."
+                      value={q.correct_answer ?? ''}
+                      onChange={e => setQAnswer(qi, e.target.value)}
+                      required
+                    />
                   </div>
-                </div>
+                )}
 
                 <div className="ct-field">
                   <label className="ct-label">ქულა</label>

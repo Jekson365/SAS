@@ -34,6 +34,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(t => t.FinalScore).HasColumnName("final_score");
             e.Property(t => t.Succeed).HasColumnName("succeed");
             e.Property(t => t.OnGoing).HasColumnName("on_going").HasDefaultValue(false).IsRequired();
+            e.Property(t => t.DurationMinutes).HasColumnName("duration_minutes").HasDefaultValue(0).IsRequired();
+            e.Property(t => t.StartedAt).HasColumnName("started_at");
 
             e.HasOne(t => t.Subject)
              .WithMany()
@@ -85,6 +87,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.Score).HasColumnName("score");
             e.Property(r => r.Passed).HasColumnName("passed");
             e.Property(r => r.SubmittedAt).HasColumnName("submitted_at");
+            e.Property(r => r.DurationSeconds).HasColumnName("duration_seconds").HasDefaultValue(0).IsRequired();
 
             e.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId);
             e.HasOne(r => r.Test).WithMany().HasForeignKey(r => r.TestId);
@@ -99,6 +102,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(q => q.Options).HasColumnName("options").HasColumnType("jsonb");
             e.Property(q => q.CorrectIndex).HasColumnName("correct_index");
             e.Property(q => q.Point).HasColumnName("point").HasDefaultValue(1).IsRequired();
+            e.Property(q => q.Type).HasColumnName("type").HasMaxLength(20).HasDefaultValue("quiz").IsRequired();
+            e.Property(q => q.ImageUrl).HasColumnName("image_url");
+            e.Property(q => q.CorrectAnswer).HasColumnName("correct_answer");
 
             e.HasOne(q => q.Test)
              .WithMany()

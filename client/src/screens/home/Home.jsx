@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import iconLight from '../../assets/icon-light.png'
 import practiceTests from '../../data/practiceTests.json'
@@ -65,6 +65,27 @@ function formatRelativeTime(iso) {
   return past ? `${parts} წინ` : `${parts}-ში`
 }
 
+function useNow(intervalMs = 1000) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), intervalMs)
+    return () => clearInterval(id)
+  }, [intervalMs])
+  return now
+}
+
+function formatCountdown(diffMs) {
+  if (!Number.isFinite(diffMs) || diffMs <= 0) return '00:00:00'
+  const total = Math.floor(diffMs / 1000)
+  const days  = Math.floor(total / 86400)
+  const hours = Math.floor((total % 86400) / 3600)
+  const mins  = Math.floor((total % 3600) / 60)
+  const secs  = total % 60
+  const pad   = n => String(n).padStart(2, '0')
+  const hms   = `${pad(hours)}:${pad(mins)}:${pad(secs)}`
+  return days > 0 ? `${days} დღე ${hms}` : hms
+}
+
 function PracticeCard({ test }) {
   return (
     <div className="box test-card practice">
@@ -94,6 +115,9 @@ function PracticeCard({ test }) {
 function TestCard({ test, upcoming, isAdmin, onStart, onRegister, onDelete, registered }) {
   const navigate = useNavigate()
   const subjectName = test.subject?.name ?? test.subject ?? '—'
+  const now = useNow(upcoming ? 1000 : 60_000)
+  const startMs = test.test_start_date ? new Date(test.test_start_date).getTime() : null
+  const untilStartMs = startMs ? startMs - now : null
   return (
     <div className={`box test-card ${upcoming ? 'upcoming' : test.succeed ? 'success' : 'failed'}`}>
       {isAdmin && upcoming && onDelete && (
@@ -117,7 +141,11 @@ function TestCard({ test, upcoming, isAdmin, onStart, onRegister, onDelete, regi
       </div>
 
       {upcoming && (
-        <div className="test-card-relative">⏳ {formatRelativeTime(test.test_start_date)}</div>
+        <div className="test-card-relative">
+          ⏳ {untilStartMs !== null && untilStartMs > 0
+            ? `დაიწყება ${formatCountdown(untilStartMs)}-ში`
+            : formatRelativeTime(test.test_start_date)}
+        </div>
       )}
 
       <div className="test-card-scores">
@@ -172,6 +200,11 @@ function OngoingCard({ test, taken, isAdmin, onStop, registration }) {
   const subjectName = test.subject?.name ?? test.subject ?? '—'
   const isRegistered = Boolean(registration)
   const isPaid       = Boolean(registration?.is_paid)
+  const now = useNow(1000)
+  const endMs = test.started_at && test.duration_minutes
+    ? new Date(test.started_at).getTime() + Number(test.duration_minutes) * 60_000
+    : null
+  const remainingMs = endMs !== null ? endMs - now : null
   return (
     <div className={`box test-card ongoing ${taken ? 'taken' : ''}`}>
       <div className="test-card-top">
@@ -190,7 +223,11 @@ function OngoingCard({ test, taken, isAdmin, onStop, registration }) {
         <span className="test-card-date">🕐 {formatTestDate(test.test_start_date)}</span>
       </div>
 
-      <div className="test-card-relative">⏱ დაწყებულია {formatRelativeTime(test.test_start_date)}</div>
+      <div className={`test-card-relative ${remainingMs !== null && remainingMs <= 60_000 ? 'time-critical' : ''}`}>
+        ⏱ {remainingMs !== null
+          ? (remainingMs > 0 ? `დარჩენილია ${formatCountdown(remainingMs)}` : 'დრო ამოიწურა')
+          : `დაწყებულია ${formatRelativeTime(test.test_start_date)}`}
+      </div>
 
       <div className="test-card-scores">
         <div className="score-row">

@@ -27,4 +27,7 @@ public class TestResult
 
     [JsonPropertyName("submitted_at")]
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+
+    [JsonPropertyName("duration_seconds")]
+    public int DurationSeconds { get; set; }
 }

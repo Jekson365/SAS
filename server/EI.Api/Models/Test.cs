@@ -32,4 +32,10 @@ public class Test
     public bool? Succeed { get; set; }
     [JsonPropertyName("on_going")]
     public bool OnGoing {get;set;}
+
+    [JsonPropertyName("duration_minutes")]
+    public int DurationMinutes { get; set; }
+
+    [JsonPropertyName("started_at")]
+    public DateTime? StartedAt { get; set; }
 }

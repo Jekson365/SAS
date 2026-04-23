@@ -1,8 +1,36 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTest } from '../../hooks/tests/useTest'
 import { useTakeTestQuestions } from '../../hooks/tests/useTakeTestQuestions'
 import { useSubmitTestResult } from '../../hooks/useSubmitTestResult'
+import { resolveImageUrl } from '../../api/questionImage'
+
+function normalizeText(s) {
+  return (s ?? '').toString().trim().toLocaleLowerCase()
+}
+
+function isQuestionCorrect(q, answer) {
+  if (q.type === 'open') {
+    return normalizeText(answer) !== '' &&
+           normalizeText(answer) === normalizeText(q.correct_answer)
+  }
+  return answer === q.correct_index
+}
+
+function isAnswered(q, answer) {
+  if (q.type === 'open') return normalizeText(answer) !== ''
+  return answer !== undefined
+}
+
+function formatRemaining(ms) {
+  if (ms <= 0) return '00:00'
+  const total = Math.floor(ms / 1000)
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  const pad = n => String(n).padStart(2, '0')
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+}
 
 function OngoingTest() {
   const { id } = useParams()
@@ -17,6 +45,44 @@ function OngoingTest() {
   const [answers,   setAnswers]   = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [result,    setResult]    = useState(null)
+  const [now,       setNow]       = useState(() => Date.now())
+
+  const deadlineMs = test?.started_at && test?.duration_minutes
+    ? new Date(test.started_at).getTime() + Number(test.duration_minutes) * 60_000
+    : null
+
+  const remainingMs = deadlineMs ? Math.max(0, deadlineMs - now) : null
+  const timeExpired = deadlineMs !== null && remainingMs === 0
+
+  useEffect(() => {
+    if (!deadlineMs || submitted) return
+    const tick = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(tick)
+  }, [deadlineMs, submitted])
+
+  const answersRef   = useRef(answers)
+  const questionsRef = useRef(questions)
+  useEffect(() => { answersRef.current   = answers   }, [answers])
+  useEffect(() => { questionsRef.current = questions }, [questions])
+
+  const autoSubmittedRef = useRef(false)
+  useEffect(() => {
+    if (!timeExpired || submitted || autoSubmittedRef.current) return
+    if (!questionsRef.current || questionsRef.current.length === 0) return
+    autoSubmittedRef.current = true
+    const qs = questionsRef.current
+    const as = answersRef.current
+    const score = qs.reduce((sum, q) => (
+      isQuestionCorrect(q, as[q.id]) ? sum + (Number(q.point) || 1) : sum
+    ), 0)
+    const passed = score >= (test?.pass_score ?? 0)
+    const startedAtMs = test?.started_at ? new Date(test.started_at).getTime() : null
+    const durationSeconds = startedAtMs ? Math.floor((Date.now() - startedAtMs) / 1000) : 0
+    submitResult({ testId: Number(id), score, passed, durationSeconds }).then(saved => {
+      setResult({ score, passed, saved })
+      setSubmitted(true)
+    })
+  }, [timeExpired, submitted, submitResult, id, test])
 
   if (testLoading || questionsLoading) {
     return (
@@ -52,19 +118,24 @@ function OngoingTest() {
 
   const subjectName    = test.subject?.name ?? test.subject ?? '—'
   const q              = questions[current]
-  const totalAnswered  = Object.keys(answers).length
+  const totalAnswered  = questions.filter(qq => isAnswered(qq, answers[qq.id])).length
   const isLast         = current === questions.length - 1
 
   function selectAnswer(optionIndex) {
-    if (submitted) return
+    if (submitted || timeExpired) return
     setAnswers(prev => ({ ...prev, [q.id]: optionIndex }))
+  }
+
+  function setOpenAnswer(text) {
+    if (submitted || timeExpired) return
+    setAnswers(prev => ({ ...prev, [q.id]: text }))
   }
 
   const totalPoints = questions.reduce((sum, q) => sum + (Number(q.point) || 1), 0)
 
   function calcScore() {
     return questions.reduce((sum, q) => (
-      answers[q.id] === q.correct_index ? sum + (Number(q.point) || 1) : sum
+      isQuestionCorrect(q, answers[q.id]) ? sum + (Number(q.point) || 1) : sum
     ), 0)
   }
 
@@ -72,7 +143,9 @@ function OngoingTest() {
     if (totalAnswered < questions.length) return
     const score  = calcScore()
     const passed = score >= test.pass_score
-    const saved  = await submitResult({ testId: Number(id), score, passed })
+    const startedAtMs = test?.started_at ? new Date(test.started_at).getTime() : null
+    const durationSeconds = startedAtMs ? Math.floor((Date.now() - startedAtMs) / 1000) : 0
+    const saved = await submitResult({ testId: Number(id), score, passed, durationSeconds })
     setResult({ score, passed, saved })
     setSubmitted(true)
   }
@@ -132,8 +205,7 @@ function OngoingTest() {
 
             <div className="ongoing-result-breakdown">
               {questions.map((q, i) => {
-                const chosen = answers[q.id]
-                const ok = chosen === q.correct_index
+                const ok = isQuestionCorrect(q, answers[q.id])
                 return (
                   <div key={q.id} className={`result-row ${ok ? 'correct' : 'wrong'}`}>
                     <span className="result-row-num">{i + 1}</span>
@@ -199,6 +271,14 @@ function OngoingTest() {
               <span className="ongoing-meta-label">პასუხი</span>
               <strong className="ongoing-meta-value">{totalAnswered} / {questions.length}</strong>
             </div>
+            {remainingMs !== null && (
+              <div className="ongoing-meta-item">
+                <span className="ongoing-meta-label">დარჩენილი დრო</span>
+                <strong className={`ongoing-meta-value ${remainingMs <= 60_000 ? 'time-critical' : ''}`}>
+                  {formatRemaining(remainingMs)}
+                </strong>
+              </div>
+            )}
           </div>
         </div>
 
@@ -215,7 +295,7 @@ function OngoingTest() {
           {questions.map((qItem, i) => (
             <button
               key={qItem.id}
-              className={`q-dot ${i === current ? 'active' : ''} ${answers[qItem.id] !== undefined ? 'answered' : ''}`}
+              className={`q-dot ${i === current ? 'active' : ''} ${isAnswered(qItem, answers[qItem.id]) ? 'answered' : ''}`}
               onClick={() => setCurrent(i)}
             >
               {i + 1}
@@ -229,18 +309,37 @@ function OngoingTest() {
             <div className="ongoing-question-number">კითხვა {current + 1} / {questions.length}</div>
             <p className="ongoing-question-text">{q.question_text}</p>
 
-            <div className="ongoing-options">
-              {q.options.map((opt, i) => (
-                <button
-                  key={i}
-                  className={`ongoing-option ${answers[q.id] === i ? 'selected' : ''}`}
-                  onClick={() => selectAnswer(i)}
-                >
-                  <span className="option-letter">{String.fromCharCode(65 + i)}</span>
-                  <span className="option-text">{opt}</span>
-                </button>
-              ))}
-            </div>
+            {q.image_url && (
+              <div className="ongoing-question-image">
+                <img src={resolveImageUrl(q.image_url)} alt="" />
+              </div>
+            )}
+
+            {q.type === 'open' ? (
+              <div className="ongoing-open-answer">
+                <input
+                  type="text"
+                  className="ongoing-open-input"
+                  placeholder="შენი პასუხი..."
+                  value={answers[q.id] ?? ''}
+                  onChange={e => setOpenAnswer(e.target.value)}
+                  disabled={submitted || timeExpired}
+                />
+              </div>
+            ) : (
+              <div className="ongoing-options">
+                {q.options.map((opt, i) => (
+                  <button
+                    key={i}
+                    className={`ongoing-option ${answers[q.id] === i ? 'selected' : ''}`}
+                    onClick={() => selectAnswer(i)}
+                  >
+                    <span className="option-letter">{String.fromCharCode(65 + i)}</span>
+                    <span className="option-text">{opt}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="ongoing-nav">
               <button

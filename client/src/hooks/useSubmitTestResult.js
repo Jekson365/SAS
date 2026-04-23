@@ -5,16 +5,17 @@ export function useSubmitTestResult() {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState(null)
 
-  async function submitResult({ testId, score, passed }) {
+  async function submitResult({ testId, score, passed, durationSeconds }) {
     setLoading(true)
     setError(null)
     try {
       const userId = Number(localStorage.getItem('user_id'))
       const { data } = await axiosInstance.post('/testresults', {
-        user_id:      userId,
-        test_id:      testId,
+        user_id:          userId,
+        test_id:          testId,
         score,
         passed,
+        duration_seconds: Number.isFinite(durationSeconds) ? Math.max(0, Math.floor(durationSeconds)) : 0,
       })
       return data
     } catch (err) {

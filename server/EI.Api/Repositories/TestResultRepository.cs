@@ -37,4 +37,7 @@ public class TestResultRepository : ITestResultRepository
 
     public async Task<IEnumerable<TestResult>> GetByTestIdAsync(int testId) =>
         await _db.TestResults.Include(r => r.User).Where(r => r.TestId == testId).ToListAsync();
+
+    public async Task<bool> ExistsForUserAndTestAsync(int userId, int testId) =>
+        await _db.TestResults.AnyAsync(r => r.UserId == userId && r.TestId == testId);
 }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useState } from 'react'
 
 const pad = n => String(n).padStart(2, '0')
 const HOURS   = Array.from({ length: 24 }, (_, i) => pad(i))
@@ -17,10 +17,25 @@ function joinValue(date, hour, minute) {
 }
 
 function DateTime24Picker({ value, onChange, required = false, id }) {
-  const { date, hour, minute } = useMemo(() => splitValue(value), [value])
+  const initial = splitValue(value)
+  const [date, setDate] = useState(initial.date)
+  const [hour, setHour] = useState(initial.hour)
+  const [minute, setMinute] = useState(initial.minute)
 
-  const emit = (nextDate, nextHour, nextMinute) =>
-    onChange(joinValue(nextDate, nextHour, nextMinute))
+  useEffect(() => {
+    if (value === joinValue(date, hour, minute)) return
+    const s = splitValue(value)
+    setDate(s.date)
+    setHour(s.hour)
+    setMinute(s.minute)
+  }, [value])
+
+  const emit = (d, h, m) => {
+    setDate(d)
+    setHour(h)
+    setMinute(m)
+    onChange(joinValue(d, h, m))
+  }
 
   return (
     <div className="dt24-picker">

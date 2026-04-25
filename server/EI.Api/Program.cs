@@ -8,6 +8,20 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
+// ── Load .env ────────────────────────────────────────────────────────────────
+foreach (var envPath in new[] { ".env", "../.env" })
+{
+    if (!File.Exists(envPath)) continue;
+    foreach (var line in File.ReadAllLines(envPath))
+    {
+        var trimmed = line.Trim();
+        if (trimmed.Length == 0 || trimmed.StartsWith('#')) continue;
+        var idx = trimmed.IndexOf('=');
+        if (idx <= 0) continue;
+        Environment.SetEnvironmentVariable(trimmed[..idx].Trim(), trimmed[(idx + 1)..].Trim());
+    }
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Database ─────────────────────────────────────────────────────────────────
@@ -18,7 +32,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactClient", policy =>
-        policy.WithOrigins("http://localhost:5174")
+        policy.WithOrigins(builder.Configuration["CLIENT_BASE_URL"] ?? "http://localhost:5174")
               .AllowAnyHeader()
               .AllowAnyMethod());
 });

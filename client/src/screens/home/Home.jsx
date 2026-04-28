@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import iconLight from '../../assets/icon-light.png'
 import practiceTests from '../../data/practiceTests.json'
+import Sidebar from '../../components/Sidebar'
 import { useCurrentUser } from '../../hooks/users/useCurrentUser'
-import { useLogout } from '../../hooks/users/useLogout'
 import { useTests } from '../../hooks/tests/useTests'
 import { useStartTest } from '../../hooks/tests/useStartTest'
 import { useUserTestResults } from '../../hooks/tests/useUserTestResults'
@@ -15,12 +14,6 @@ import {
   TrophyBrokenIcon,
   TrashIcon,
   FileIcon,
-  UserIcon,
-  HomeIcon,
-  PlusCircleIcon,
-  LogoutIcon,
-  MenuIcon,
-  GridIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '../../assets/icons'
@@ -259,14 +252,12 @@ function OngoingCard({ test, taken, isAdmin, onStop, registration }) {
 
 function Home() {
   const [slide, setSlide] = useState(0)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [rightOpen, setRightOpen] = useState(false)
   const [registerModal, setRegisterModal] = useState({ test: null, stage: 'confirm', done: false })
   const navigate = useNavigate()
 
   const { user } = useCurrentUser()
   const isAdmin = user?.role === 1 || user?.role === 'Admin'
-  const { logout, loading: loggingOut } = useLogout()
   const { tests, loading: testsLoading, refetch: refetchTests } = useTests()
   const { startTest, stopTest } = useStartTest()
   const { results: userResults } = useUserTestResults()
@@ -315,11 +306,6 @@ function Home() {
     }
   }
 
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
-
   const takenTestIds = new Set(userResults.map(r => r.test_id))
 
   const now = Date.now()
@@ -354,69 +340,16 @@ function Home() {
   return (
     <div className="dashboard">
 
-      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
-      {rightOpen   && <div className="sidebar-overlay" onClick={() => setRightOpen(false)} />}
+      {rightOpen && <div className="sidebar-overlay" onClick={() => setRightOpen(false)} />}
 
-      {/* ── Sidebar ── */}
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-logo">
-          <img src={iconLight} alt="" className="logo-icon" />
-          ინოვატორი
-        </div>
-
-        <div className="sidebar-profile">
-          <div className="profile-avatar">
-            <UserIcon />
-          </div>
-          <div className="profile-info">
-            <span className="profile-name">
-              {user ? `${user.name} ${user.surname.charAt(0)}.` : '...'}
-            </span>
-            <span className="profile-email">{user?.email ?? ''}</span>
-            <span className="profile-status">
-              <span className="status-dot" />
-              აქტიური
-            </span>
-          </div>
-        </div>
-
-        <nav className="sidebar-nav">
-          <button className="nav-item active" onClick={() => setSidebarOpen(false)}>
-            <HomeIcon />
-            მთავარი
-          </button>
-          {isAdmin && (
-            <>
-              <button className="nav-item" onClick={() => navigate('/create-test')}>
-                <PlusCircleIcon />
-                ტესტის შექმნა
-              </button>
-              <button className="nav-item" onClick={() => navigate('/test-results')}>
-                <PlusCircleIcon />
-                შედეგები
-              </button>
-            </>
-          )}
-        </nav>
-
-        <button className="nav-item logout" onClick={handleLogout} disabled={loggingOut}>
-          <LogoutIcon />
-          {loggingOut ? '...' : 'გასვლა'}
-        </button>
-      </aside>
+      <Sidebar
+        active="home"
+        mobileTitle="მთავარი"
+        onToggleRight={() => setRightOpen(o => !o)}
+      />
 
       {/* ── Main content ── */}
       <main className="dashboard-main">
-
-        <div className="mobile-topbar">
-          <button className="hamburger" onClick={() => setSidebarOpen(o => !o)}>
-            <MenuIcon />
-          </button>
-          <span className="topbar-title">მთავარი</span>
-          <button className="hamburger" onClick={() => setRightOpen(o => !o)}>
-            <GridIcon />
-          </button>
-        </div>
 
         {/* News Slider */}
         <section className="news-slider">

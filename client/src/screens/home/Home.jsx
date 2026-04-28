@@ -348,8 +348,6 @@ function Home() {
   }))
 
 
-  console.log(completedTests)
-
   const prev = () => setSlide(s => (s === 0 ? NEWS_SLIDES.length - 1 : s - 1))
   const next = () => setSlide(s => (s === NEWS_SLIDES.length - 1 ? 0 : s + 1))
 
@@ -388,10 +386,16 @@ function Home() {
             მთავარი
           </button>
           {isAdmin && (
-            <button className="nav-item" onClick={() => navigate('/create-test')}>
-              <PlusCircleIcon />
-              ტესტის შექმნა
-            </button>
+            <>
+              <button className="nav-item" onClick={() => navigate('/create-test')}>
+                <PlusCircleIcon />
+                ტესტის შექმნა
+              </button>
+              <button className="nav-item" onClick={() => navigate('/test-results')}>
+                <PlusCircleIcon />
+                შედეგები
+              </button>
+            </>
           )}
         </nav>
 

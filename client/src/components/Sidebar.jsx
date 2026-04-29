@@ -74,6 +74,13 @@ export function Sidebar({ active = 'home', mobileTitle = '', onToggleRight }) {
                 ტესტის შექმნა
               </button>
               <button
+                className={`nav-item ${active === 'create-event' ? 'active' : ''}`}
+                onClick={() => go('/create-event')}
+              >
+                <PlusCircleIcon />
+                ოლიმპიადა
+              </button>
+              <button
                 className={`nav-item ${active === 'results' ? 'active' : ''}`}
                 onClick={() => go('/test-results')}
               >

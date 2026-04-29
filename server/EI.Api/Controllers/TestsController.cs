@@ -49,6 +49,8 @@ public class TestsController(
         var test = new Test
         {
             SubjectId    = request.SubjectId,
+            Title        = request.Title ?? string.Empty,
+            EventId      = request.EventId,
             Etapi        = request.Etapi,
             TestStartDate = DateTime.SpecifyKind(request.TestStartDate, DateTimeKind.Utc),
             MaxScore     = request.Questions.Sum(q => q.Point),
@@ -90,6 +92,8 @@ public class TestsController(
             return Conflict(new { message = "Cannot edit a test that is currently ongoing. Stop it first." });
 
         test.SubjectId       = request.SubjectId;
+        test.Title           = request.Title ?? string.Empty;
+        test.EventId         = request.EventId;
         test.Etapi           = request.Etapi;
         test.TestStartDate   = DateTime.SpecifyKind(request.TestStartDate, DateTimeKind.Utc);
         test.MaxScore        = request.Questions.Sum(q => q.Point);

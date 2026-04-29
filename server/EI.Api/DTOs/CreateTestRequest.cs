@@ -4,6 +4,12 @@ namespace EI.Api.DTOs;
 
 public class CreateTestRequest
 {
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("event_id")]
+    public int? EventId { get; set; }
+
     [JsonPropertyName("subject_id")]
     public int SubjectId { get; set; }
 

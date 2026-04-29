@@ -3,6 +3,7 @@ using System;
 using EI.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EI.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260429192423_create_title_for_test")]
+    partial class create_title_for_test
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -152,41 +155,6 @@ namespace EI.Api.Migrations
                     b.HasAnnotation("Relational:JsonPropertyName", "subject");
                 });
 
-            modelBuilder.Entity("EI.Api.Models.Event", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id")
-                        .HasJsonPropertyName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("")
-                        .HasColumnName("description")
-                        .HasJsonPropertyName("description");
-
-                    b.Property<DateTime>("EventDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("event_date")
-                        .HasJsonPropertyName("event_date");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name")
-                        .HasJsonPropertyName("name");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("events", (string)null);
-                });
-
             modelBuilder.Entity("EI.Api.Models.Test", b =>
                 {
                     b.Property<int>("Id")
@@ -238,11 +206,6 @@ namespace EI.Api.Migrations
                         .HasColumnName("started_at")
                         .HasJsonPropertyName("started_at");
 
-                    b.Property<int?>("EventId")
-                        .HasColumnType("integer")
-                        .HasColumnName("event_id")
-                        .HasJsonPropertyName("event_id");
-
                     b.Property<int>("SubjectId")
                         .HasColumnType("integer")
                         .HasColumnName("subject_id")
@@ -268,8 +231,6 @@ namespace EI.Api.Migrations
                         .HasJsonPropertyName("title");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("EventId");
 
                     b.HasIndex("SubjectId");
 
@@ -485,18 +446,11 @@ namespace EI.Api.Migrations
 
             modelBuilder.Entity("EI.Api.Models.Test", b =>
                 {
-                    b.HasOne("EI.Api.Models.Event", "Event")
-                        .WithMany("Tests")
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("EI.Api.Models.Subject", "Subject")
                         .WithMany()
                         .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Event");
 
                     b.Navigation("Subject");
                 });

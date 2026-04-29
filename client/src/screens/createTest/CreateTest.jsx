@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCreateTest } from '../../hooks/tests/useCreateTest'
 import { useSubjects } from '../../hooks/tests/useSubjects'
+import { useEvents } from '../../hooks/tests/useEvents'
 import DateTime24Picker from '../../components/DateTime24Picker'
 import { uploadQuestionImage, resolveImageUrl } from '../../api/questionImage'
 
@@ -22,8 +23,11 @@ function CreateTest() {
   const navigate = useNavigate()
   const { createTest, loading, error } = useCreateTest()
   const { subjects, loading: subjectsLoading } = useSubjects()
+  const { events, loading: eventsLoading } = useEvents()
 
   const [fields, setFields] = useState({
+    title:           '',
+    eventId:         '',
     subjectId:       '',
     etapi:           '',
     testStartDate:   '',
@@ -78,6 +82,8 @@ function CreateTest() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     const payload = {
+      title:            fields.title.trim(),
+      event_id:         fields.eventId ? Number(fields.eventId) : null,
       subject_id:       Number(fields.subjectId),
       etapi:            fields.etapi,
       test_start_date:  new Date(fields.testStartDate).toISOString(),
@@ -117,6 +123,35 @@ function CreateTest() {
 
         {/* Form */}
         <form className="create-test-form" onSubmit={handleSubmit}>
+
+          <div className="ct-field">
+            <label className="ct-label">სათაური</label>
+            <input
+              type="text"
+              className="ct-input"
+              placeholder="ტესტის სათაური..."
+              value={fields.title}
+              onChange={set('title')}
+              required
+            />
+          </div>
+
+          <div className="ct-field">
+            <label className="ct-label">ღონისძიება (არასავალდებულო)</label>
+            <select
+              className="ct-input ct-select"
+              value={fields.eventId}
+              onChange={set('eventId')}
+            >
+              <option value="">— ღონისძიების გარეშე —</option>
+              {eventsLoading
+                ? <option disabled>იტვირთება...</option>
+                : events.map(ev => (
+                    <option key={ev.id} value={ev.id}>{ev.name}</option>
+                  ))
+              }
+            </select>
+          </div>
 
           <div className="ct-field">
             <label className="ct-label">საგანი</label>

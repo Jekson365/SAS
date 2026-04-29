@@ -7,6 +7,7 @@ import Home from './screens/home/Home'
 import OngoingTest from './screens/ongoingTest/OngoingTest'
 import CreateTest from './screens/createTest/CreateTest'
 import EditTest from './screens/editTest/EditTest'
+import CreateEvent from './screens/createEvent/CreateEvent'
 import './styles/App.scss'
 import { TestResult } from './screens/testResults/TestResult'
 
@@ -23,6 +24,7 @@ function App() {
         <Route path="/create-test" element={<CreateTest />} />
         <Route path="/test-results" element={<TestResult />} />
         <Route path="/edit-test/:id" element={<EditTest />} />
+        <Route path="/create-event" element={<CreateEvent />} />
       </Routes>
     </BrowserRouter>
   )

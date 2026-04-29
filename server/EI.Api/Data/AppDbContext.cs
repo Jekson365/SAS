@@ -6,6 +6,7 @@ namespace EI.Api.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<Event> Events => Set<Event>();
     public DbSet<Test> Tests => Set<Test>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Session> Sessions => Set<Session>();
@@ -22,11 +23,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(s => s.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
         });
 
+        modelBuilder.Entity<Event>(e =>
+        {
+            e.ToTable("events");
+            e.Property(ev => ev.Id).HasColumnName("id");
+            e.Property(ev => ev.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
+            e.Property(ev => ev.Description).HasColumnName("description").HasDefaultValue("").IsRequired();
+            e.Property(ev => ev.EventDate).HasColumnName("event_date");
+        });
+
         modelBuilder.Entity<Test>(e =>
         {
             e.ToTable("tests");
             e.Property(t => t.Id).HasColumnName("id");
             e.Property(t => t.SubjectId).HasColumnName("subject_id");
+            e.Property(t => t.Title).HasColumnName("title").HasMaxLength(200).HasDefaultValue("").IsRequired();
+            e.Property(t => t.EventId).HasColumnName("event_id");
             e.Property(t => t.Etapi).HasColumnName("etapi").HasMaxLength(50).IsRequired();
             e.Property(t => t.TestStartDate).HasColumnName("test_start_date");
             e.Property(t => t.MaxScore).HasColumnName("max_score");
@@ -40,6 +52,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(t => t.Subject)
              .WithMany()
              .HasForeignKey(t => t.SubjectId);
+
+            e.HasOne(t => t.Event)
+             .WithMany(ev => ev.Tests)
+             .HasForeignKey(t => t.EventId)
+             .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<User>(e =>

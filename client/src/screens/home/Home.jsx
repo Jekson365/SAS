@@ -128,6 +128,8 @@ function TestCard({ test, upcoming, isAdmin, onStart, onRegister, onDelete, regi
         {!upcoming && (test.succeed ? <TrophyIcon className="trophy succeed" /> : <TrophyBrokenIcon className="trophy failed" />)}
       </div>
 
+      {test.title && <div className="test-card-title">{test.title}</div>}
+
       <div className="test-card-meta">
         <span className="test-etapi">{test.etapi}</span>
         <span className="test-card-date">{upcoming ? '📅' : '✅'} {formatTestDate(test.test_start_date)}</span>
@@ -210,6 +212,8 @@ function OngoingCard({ test, taken, isAdmin, onStop, registration }) {
             </span>
         }
       </div>
+
+      {test.title && <div className="test-card-title">{test.title}</div>}
 
       <div className="test-card-meta">
         <span className="test-etapi">{test.etapi}</span>
@@ -378,18 +382,35 @@ function Home() {
             <h3 className="section-title">მიმდინარე ტესტები</h3>
             {testsLoading
               ? <p className="section-empty">იტვირთება...</p>
-              : <div className="boxes-grid">
-                  {ongoingTests.map(test => (
-                    <OngoingCard
-                      key={test.id}
-                      test={test}
-                      taken={takenTestIds.has(test.id)}
-                      isAdmin={isAdmin}
-                      onStop={handleStopTest}
-                      registration={registrationsByTest.get(test.id) ?? null}
-                    />
-                  ))}
-                </div>
+              : (() => {
+                  const groups = []
+                  const seen = new Map()
+                  ongoingTests.forEach(test => {
+                    const key = test.event?.id ?? null
+                    const label = test.event?.name ?? null
+                    if (!seen.has(key)) { seen.set(key, groups.length); groups.push({ key, label, tests: [] }) }
+                    groups[seen.get(key)].tests.push(test)
+                  })
+                  return groups.map(group => (
+                    <div key={group.key ?? 'no-event'}>
+                      {group.label && <h4 className="event-group-title" 
+                        
+                      >{group.label}</h4>}
+                      <div className="boxes-grid">
+                        {group.tests.map(test => (
+                          <OngoingCard
+                            key={test.id}
+                            test={test}
+                            taken={takenTestIds.has(test.id)}
+                            isAdmin={isAdmin}
+                            onStop={handleStopTest}
+                            registration={registrationsByTest.get(test.id) ?? null}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                })()
             }
           </section>
         )}
@@ -397,20 +418,37 @@ function Home() {
         {/* Upcoming tests */}
         <section className="boxes-section">
           <h3 className="section-title">სამომავლო ტესტები</h3>
-          <div className="boxes-grid">
-            {futureTests.map(test => (
-              <TestCard
-                key={test.id}
-                test={test}
-                upcoming
-                isAdmin={isAdmin}
-                onStart={handleStartTest}
-                onRegister={openRegisterModal}
-                onDelete={handleDeleteTest}
-                registered={registeredTestIds.has(test.id)}
-              />
-            ))}
-          </div>
+          {(() => {
+            const groups = []
+            const seen = new Map()
+            futureTests.forEach(test => {
+              const key = test.event?.id ?? null
+              const label = test.event?.name ?? null
+              if (!seen.has(key)) { seen.set(key, groups.length); groups.push({ key, label, tests: [] }) }
+              groups[seen.get(key)].tests.push(test)
+            })
+            return groups.map(group => (
+              <div key={group.key ?? 'no-event'}>
+                {group.label && <h4 className="event-group-title"
+                style={{marginBottom:"15px"}}
+                >{group.label}</h4>}
+                <div className="boxes-grid">
+                  {group.tests.map(test => (
+                    <TestCard
+                      key={test.id}
+                      test={test}
+                      upcoming
+                      isAdmin={isAdmin}
+                      onStart={handleStartTest}
+                      onRegister={openRegisterModal}
+                      onDelete={handleDeleteTest}
+                      registered={registeredTestIds.has(test.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))
+          })()}
         </section>
 
         {/* Completed tests */}

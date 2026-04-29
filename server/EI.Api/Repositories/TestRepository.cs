@@ -28,8 +28,8 @@ public class TestRepository(AppDbContext db) : ITestRepository
         await _db.SaveChangesAsync();
 
     public async Task<IEnumerable<Test>> GetAllWithSubjectAsync() =>
-        await _db.Tests.Include(t => t.Subject).ToListAsync();
+        await _db.Tests.Include(t => t.Subject).Include(t => t.Event).ToListAsync();
 
     public async Task<Test?> GetByIdWithSubjectAsync(int id) =>
-        await _db.Tests.Include(t => t.Subject).FirstOrDefaultAsync(t => t.Id == id);
+        await _db.Tests.Include(t => t.Subject).Include(t => t.Event).FirstOrDefaultAsync(t => t.Id == id);
 }

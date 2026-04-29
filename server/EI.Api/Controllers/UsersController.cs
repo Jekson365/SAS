@@ -78,8 +78,8 @@ public class UsersController : ControllerBase
 
         if (await _userRepo.ExistsByPrivateNumberAsync(hashedPrivateNumber))
             return Conflict(new { message = "Private number already in use." });
-        if (await _userRepo.ExistsByMobileNumberAsync(hashedMobileNumber))
-            return Conflict(new { message = "Mobile number already in use." });
+        // if (await _userRepo.ExistsByMobileNumberAsync(hashedMobileNumber))
+        //     return Conflict(new { message = "Mobile number already in use." });
 
         var code = Random.Shared.Next(100000, 1000000).ToString();
         var user = new User

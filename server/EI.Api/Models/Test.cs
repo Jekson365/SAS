@@ -7,6 +7,15 @@ public class Test
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("event_id")]
+    public int? EventId { get; set; }
+
+    [JsonPropertyName("event")]
+    public Event? Event { get; set; }
+
     [JsonPropertyName("subject_id")]
     public int SubjectId { get; set; }
 

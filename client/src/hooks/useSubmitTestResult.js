@@ -5,7 +5,7 @@ export function useSubmitTestResult() {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState(null)
 
-  async function submitResult({ testId, score, passed, durationSeconds }) {
+  async function submitResult({ testId, score, passed, durationSeconds, answers = [] }) {
     setLoading(true)
     setError(null)
     try {
@@ -16,6 +16,7 @@ export function useSubmitTestResult() {
         score,
         passed,
         duration_seconds: Number.isFinite(durationSeconds) ? Math.max(0, Math.floor(durationSeconds)) : 0,
+        answers,
       })
       return data
     } catch (err) {

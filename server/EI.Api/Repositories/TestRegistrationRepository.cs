@@ -30,7 +30,16 @@ public class TestRegistrationRepository : ITestRegistrationRepository
         await _db.SaveChangesAsync();
 
     public async Task<IEnumerable<TestRegistration>> GetByUserIdAsync(int userId) =>
-        await _db.TestRegistrations.Where(r => r.UserId == userId).ToListAsync();
+        await _db.TestRegistrations
+            .Include(r => r.User)
+            .Where(r => r.UserId == userId)
+            .ToListAsync();
+
+    public async Task<IEnumerable<TestRegistration>> GetByTestIdAsync(int testId) =>
+        await _db.TestRegistrations
+            .Include(r => r.User)
+            .Where(r => r.TestId == testId)
+            .ToListAsync();
 
     public async Task<TestRegistration?> GetByUserAndTestAsync(int userId, int testId) =>
         await _db.TestRegistrations.FirstOrDefaultAsync(r => r.UserId == userId && r.TestId == testId);

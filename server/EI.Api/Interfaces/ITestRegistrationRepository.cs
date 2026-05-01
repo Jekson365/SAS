@@ -5,5 +5,6 @@ namespace EI.Api.Interfaces;
 public interface ITestRegistrationRepository : IRepository<TestRegistration>
 {
     Task<IEnumerable<TestRegistration>> GetByUserIdAsync(int userId);
+    Task<IEnumerable<TestRegistration>> GetByTestIdAsync(int testId);
     Task<TestRegistration?> GetByUserAndTestAsync(int userId, int testId);
 }

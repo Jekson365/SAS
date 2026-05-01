@@ -353,6 +353,11 @@
     border-color: rgba($color-green, 0.4);
   }
 
+  &.student-wrong {
+    background: rgba($color-red, 0.08);
+    border-color: rgba($color-red, 0.35);
+  }
+
   .results-option-letter {
     width: 24px; height: 24px;
     border-radius: 50%;
@@ -368,11 +373,31 @@
     color: white;
   }
 
+  &.student-wrong .results-option-letter {
+    background: $color-red;
+    color: white;
+  }
+
   .results-option-tag {
     font-size: 11px;
     color: $color-green;
     font-weight: 700;
     text-transform: uppercase;
+
+    &.wrong {
+      color: $color-red;
+    }
+  }
+}
+
+.results-open-answers {
+  display: flex; flex-direction: column; gap: 6px;
+
+  .results-correct-open.wrong {
+    background: rgba($color-red, 0.08);
+    border-color: rgba($color-red, 0.35);
+
+    .results-correct-label { color: $color-red; }
   }
 }
 

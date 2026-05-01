@@ -65,6 +65,14 @@ function OngoingTest() {
   useEffect(() => { answersRef.current   = answers   }, [answers])
   useEffect(() => { questionsRef.current = questions }, [questions])
 
+  function buildAnswers(qs, as) {
+    return qs.map(q => ({
+      question_id:    q.id,
+      selected_index: q.type !== 'open' ? (as[q.id] ?? null) : null,
+      answer_text:    q.type === 'open'  ? (as[q.id] ?? null) : null,
+    }))
+  }
+
   const autoSubmittedRef = useRef(false)
   useEffect(() => {
     if (!timeExpired || submitted || autoSubmittedRef.current) return
@@ -78,7 +86,7 @@ function OngoingTest() {
     const passed = score >= (test?.pass_score ?? 0)
     const startedAtMs = test?.started_at ? new Date(test.started_at).getTime() : null
     const durationSeconds = startedAtMs ? Math.floor((Date.now() - startedAtMs) / 1000) : 0
-    submitResult({ testId: Number(id), score, passed, durationSeconds }).then(saved => {
+    submitResult({ testId: Number(id), score, passed, durationSeconds, answers: buildAnswers(qs, as) }).then(saved => {
       setResult({ score, passed, saved })
       setSubmitted(true)
     })
@@ -145,7 +153,7 @@ function OngoingTest() {
     const passed = score >= test.pass_score
     const startedAtMs = test?.started_at ? new Date(test.started_at).getTime() : null
     const durationSeconds = startedAtMs ? Math.floor((Date.now() - startedAtMs) / 1000) : 0
-    const saved = await submitResult({ testId: Number(id), score, passed, durationSeconds })
+    const saved = await submitResult({ testId: Number(id), score, passed, durationSeconds, answers: buildAnswers(questions, answers) })
     setResult({ score, passed, saved })
     setSubmitted(true)
   }

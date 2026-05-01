@@ -49,6 +49,7 @@ public class TestResultsController : ControllerBase
             return Conflict(new { message = "ეს ტესტი უკვე ჩაბარებული გაქვთ." });
 
         result.SubmittedAt = DateTime.UtcNow;
+        result.Answers ??= [];
         await _repo.AddAsync(result);
         await _repo.SaveAsync();
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);

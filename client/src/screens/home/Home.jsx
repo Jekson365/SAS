@@ -9,6 +9,7 @@ import { useUserTestResults } from '../../hooks/tests/useUserTestResults'
 import { useRegisterForTest } from '../../hooks/tests/useRegisterForTest'
 import { useUserRegistrations } from '../../hooks/tests/useUserRegistrations'
 import { useDeleteTest } from '../../hooks/tests/useDeleteTest'
+import { useTestRegistrations } from '../../hooks/tests/useTestRegistrations'
 import {
   TrophyIcon,
   TrophyBrokenIcon,
@@ -105,7 +106,7 @@ function PracticeCard({ test }) {
   )
 }
 
-function TestCard({ test, upcoming, isAdmin, onStart, onRegister, onDelete, registered }) {
+function TestCard({ test, upcoming, isAdmin, onStart, onRegister, onDelete, onStudents, registered }) {
   const navigate = useNavigate()
   const subjectName = test.subject?.name ?? test.subject ?? '—'
   const now = useNow(upcoming ? 1000 : 60_000)
@@ -186,6 +187,11 @@ function TestCard({ test, upcoming, isAdmin, onStart, onRegister, onDelete, regi
             ? <button className="register-btn" disabled>რეგისრირებული</button>
             : <button className="register-btn" onClick={() => onRegister?.(test)}>რეგისტრაცია</button>
       )}
+      {isAdmin && upcoming && (
+        <button className="students-btn" onClick={() => onStudents?.(test)}>
+          სტუდენტები
+        </button>
+      )}
     </div>
   )
 }
@@ -258,6 +264,8 @@ function Home() {
   const [slide, setSlide] = useState(0)
   const [rightOpen, setRightOpen] = useState(false)
   const [registerModal, setRegisterModal] = useState({ test: null, stage: 'confirm', done: false })
+  const [studentsModal, setStudentsModal] = useState(null)
+  const { students, loading: studentsLoading, error: studentsError, fetchStudents } = useTestRegistrations()
   const navigate = useNavigate()
 
   const { user } = useCurrentUser()
@@ -290,6 +298,11 @@ function Home() {
     if (!window.confirm(confirmMsg)) return
     const ok = await deleteTest(test.id)
     if (ok) await refetchTests()
+  }
+
+  const openStudentsModal = (test) => {
+    setStudentsModal(test)
+    fetchStudents(test.id)
   }
 
   const openRegisterModal = (test) =>
@@ -442,6 +455,7 @@ function Home() {
                       onStart={handleStartTest}
                       onRegister={openRegisterModal}
                       onDelete={handleDeleteTest}
+                      onStudents={openStudentsModal}
                       registered={registeredTestIds.has(test.id)}
                     />
                   ))}
@@ -518,6 +532,40 @@ function Home() {
                   {registering ? 'მიმდინარეობს...' : 'გადახდა'}
                 </button>
               </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Students modal ── */}
+      {studentsModal && (
+        <div className="reg-modal-overlay" onClick={() => setStudentsModal(null)}>
+          <div className="reg-modal students-modal" onClick={e => e.stopPropagation()}>
+            <button className="reg-modal-close" onClick={() => setStudentsModal(null)} aria-label="დახურვა">×</button>
+            <h3 className="reg-modal-title">სტუდენტები</h3>
+            <p className="reg-modal-sub">
+              {studentsModal.subject?.name ?? studentsModal.subject ?? ''}{studentsModal.etapi ? ` — ${studentsModal.etapi}` : ''}
+            </p>
+            {studentsLoading ? (
+              <p className="students-modal-empty">იტვირთება...</p>
+            ) : studentsError ? (
+              <p className="students-modal-empty students-modal-error">{studentsError}</p>
+            ) : students.length === 0 ? (
+              <p className="students-modal-empty">რეგისტრირებული სტუდენტი არ მოიძებნა</p>
+            ) : (
+              <ul className="students-list">
+                {students.map((reg, i) => (
+                  <li key={reg.id ?? i} className="students-list-item">
+                    <span className="students-list-index">{i + 1}</span>
+                    <span className="students-list-name">
+                      {reg.user?.name ?? reg.user?.email ?? `სტუდენტი #${reg.user_id}`}
+                    </span>
+                    <span className={`students-list-badge ${reg.is_paid ? 'paid' : 'unpaid'}`}>
+                      {reg.is_paid ? 'გადახდილი' : 'გადაუხდელი'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>

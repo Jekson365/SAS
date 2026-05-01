@@ -128,6 +128,12 @@ function StudentDetailModal({ test, result, onClose }) {
   const { questions, loading } = useTestQuestions(test?.id)
   const subjectName = test?.subject?.name ?? test?.subject ?? '—'
 
+  const answerMap = useMemo(() => {
+    const map = {}
+    for (const a of result.answers ?? []) map[a.question_id] = a
+    return map
+  }, [result.answers])
+
   return (
     <div className="results-modal-overlay" onClick={onClose}>
       <div className="results-modal" onClick={e => e.stopPropagation()}>
@@ -171,9 +177,15 @@ function StudentDetailModal({ test, result, onClose }) {
           ) : (
             <ol className="results-questions">
               {questions.map((q, i) => {
-                const correctText = q.type === 'open'
-                  ? (q.correct_answer ?? '')
-                  : (q.options?.[q.correct_index] ?? '')
+                const studentAns = answerMap[q.id]
+                const studentIndex = studentAns?.selected_index ?? null
+                const studentText  = studentAns?.answer_text   ?? null
+
+                const isOpen = q.type === 'open'
+                const studentCorrect = isOpen
+                  ? (studentText ?? '').trim().toLocaleLowerCase() === (q.correct_answer ?? '').trim().toLocaleLowerCase()
+                  : studentIndex === q.correct_index
+
                 return (
                   <li key={q.id} className="results-question">
                     <div className="results-question-head">
@@ -187,23 +199,36 @@ function StudentDetailModal({ test, result, onClose }) {
                       </div>
                     )}
 
-                    {q.type === 'open' ? (
-                      <div className="results-correct-open">
-                        <span className="results-correct-label">სწორი პასუხი:</span>
-                        <span className="results-correct-text">{correctText || '—'}</span>
+                    {isOpen ? (
+                      <div className="results-open-answers">
+                        {studentText != null && (
+                          <div className={`results-correct-open ${studentCorrect ? 'correct' : 'wrong'}`}>
+                            <span className="results-correct-label">სტუდენტის პასუხი:</span>
+                            <span className="results-correct-text">{studentText || '—'}</span>
+                          </div>
+                        )}
+                        <div className="results-correct-open">
+                          <span className="results-correct-label">სწორი პასუხი:</span>
+                          <span className="results-correct-text">{q.correct_answer || '—'}</span>
+                        </div>
                       </div>
                     ) : (
                       <div className="results-options">
-                        {q.options?.map((opt, oi) => (
-                          <div
-                            key={oi}
-                            className={`results-option ${oi === q.correct_index ? 'correct' : ''}`}
-                          >
-                            <span className="results-option-letter">{String.fromCharCode(65 + oi)}</span>
-                            <span className="results-option-text">{opt}</span>
-                            {oi === q.correct_index && <span className="results-option-tag">სწორი</span>}
-                          </div>
-                        ))}
+                        {q.options?.map((opt, oi) => {
+                          const isCorrect  = oi === q.correct_index
+                          const isStudentWrong = oi === studentIndex && !isCorrect
+                          return (
+                            <div
+                              key={oi}
+                              className={`results-option ${isCorrect ? 'correct' : ''} ${isStudentWrong ? 'student-wrong' : ''}`}
+                            >
+                              <span className="results-option-letter">{String.fromCharCode(65 + oi)}</span>
+                              <span className="results-option-text">{opt}</span>
+                              {isCorrect && <span className="results-option-tag">სწორი</span>}
+                              {isStudentWrong && <span className="results-option-tag wrong">სტუდენტი</span>}
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                   </li>
@@ -211,11 +236,6 @@ function StudentDetailModal({ test, result, onClose }) {
               })}
             </ol>
           )}
-
-          <p className="results-note">
-            შენიშვნა: მონაცემთა ბაზაში ინახება მხოლოდ საბოლოო ქულა და სტატუსი.
-            მოსწავლის თითოეული პასუხი (რა მონიშნა) ცალკე არ ინახება, ამიტომ აქ ნაჩვენებია ტესტის სწორი პასუხები.
-          </p>
         </div>
       </div>
     </div>

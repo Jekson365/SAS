@@ -16,6 +16,10 @@ public class TestRegistrationsController(ITestRegistrationRepository repo) : Con
     public async Task<IActionResult> GetByUser(int userId) =>
         Ok(await repo.GetByUserIdAsync(userId));
 
+    [HttpGet("test/{testId:int}")]
+    public async Task<IActionResult> GetByTest(int testId) =>
+        Ok(await repo.GetByTestIdAsync(testId));
+
     [HttpPost]
     public async Task<IActionResult> Create(TestRegistration body)
     {

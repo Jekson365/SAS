@@ -137,13 +137,13 @@ function CreateTest() {
           </div>
 
           <div className="ct-field">
-            <label className="ct-label">ღონისძიება (არასავალდებულო)</label>
+            <label className="ct-label">ოლიმპიადა (არასავალდებულო)</label>
             <select
               className="ct-input ct-select"
               value={fields.eventId}
               onChange={set('eventId')}
             >
-              <option value="">— ღონისძიების გარეშე —</option>
+              <option value="">— ოლიმპიადის გარეშე —</option>
               {eventsLoading
                 ? <option disabled>იტვირთება...</option>
                 : events.map(ev => (

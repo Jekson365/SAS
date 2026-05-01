@@ -105,6 +105,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.Passed).HasColumnName("passed");
             e.Property(r => r.SubmittedAt).HasColumnName("submitted_at");
             e.Property(r => r.DurationSeconds).HasColumnName("duration_seconds").HasDefaultValue(0).IsRequired();
+            e.Property(r => r.Answers).HasColumnName("answers").HasColumnType("jsonb").HasDefaultValueSql("'[]'::jsonb").IsRequired();
 
             e.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId);
             e.HasOne(r => r.Test).WithMany().HasForeignKey(r => r.TestId);

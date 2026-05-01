@@ -1,5 +1,6 @@
 using System.Text;
 using EI.Api.Data;
+using Npgsql;
 using EI.Api.Interfaces;
 using EI.Api.Repositories;
 using EI.Api.Services;
@@ -26,7 +27,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ── Database ─────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(new NpgsqlDataSourceBuilder(
+            builder.Configuration.GetConnectionString("DefaultConnection"))
+        .EnableDynamicJson()
+        .Build()));
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>

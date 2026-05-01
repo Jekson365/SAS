@@ -25,8 +25,48 @@ public class TestsController(
     }
 
     [HttpGet("{id:int}/questions")]
-    public async Task<IActionResult> GetQuestions(int id) =>
-        Ok(await questionRepo.GetByTestIdAsync(id));
+    public async Task<IActionResult> GetQuestions(int id)
+    {
+        var questions = await questionRepo.GetByTestIdAsync(id);
+        var results   = await resultRepo.GetByTestIdAsync(id);
+
+        // build map: questionId -> list of student answers
+        var studentAnswersByQuestion = new Dictionary<int, List<object>>();
+        foreach (var result in results)
+        {
+            foreach (var a in result.Answers)
+            {
+                if (!studentAnswersByQuestion.TryGetValue(a.QuestionId, out var list))
+                    studentAnswersByQuestion[a.QuestionId] = list = [];
+
+                list.Add(new
+                {
+                    user_id            = result.UserId,
+                    user_name          = result.User != null
+                                            ? $"{result.User.Name} {result.User.Surname}".Trim()
+                                            : null,
+                    selected_index     = a.SelectedIndex,
+                    answer_text        = a.AnswerText,
+                });
+            }
+        }
+
+        var enriched = questions.Select(q => new
+        {
+            id             = q.Id,
+            test_id        = q.TestId,
+            question_text  = q.QuestionText,
+            options        = q.Options,
+            correct_index  = q.CorrectIndex,
+            correct_answer = q.CorrectAnswer,
+            point          = q.Point,
+            type           = q.Type,
+            image_url      = q.ImageUrl,
+            student_answers = studentAnswersByQuestion.TryGetValue(q.Id, out var sa) ? sa : [],
+        });
+
+        return Ok(enriched);
+    }
 
     [HttpGet("{id:int}/take/{userId:int}")]
     public async Task<IActionResult> GetQuestionsForUser(int id, int userId)

@@ -1,0 +1,15 @@
+# Build artifacts
+**/bin/
+**/obj/
+
+# Environment files
+.env
+.env*
+!.env.example
+
+# Local dev settings
+**/launchSettings.json
+
+# Temp/partial files
+server/EI.Api/Pro
+client/.env4
